@@ -1,0 +1,540 @@
+2025-12-16 12:20:03.962 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/auth/**']
+2025-12-16 12:20:03.992 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/otp/**']
+2025-12-16 12:20:03.993 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/simple-otp/**']
+2025-12-16 12:20:03.993 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/services/**']
+2025-12-16 12:20:03.994 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/service-categories/**']
+2025-12-16 12:20:03.994 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/providers/search/**']
+2025-12-16 12:20:03.994 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/users/**']
+2025-12-16 12:20:03.994 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/providers/**']
+2025-12-16 12:20:03.995 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/bookings/**']
+2025-12-16 12:20:03.995 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for Ant [pattern='/api/kyc/**']
+2025-12-16 12:20:03.995 [main] DEBUG o.s.s.w.a.e.ExpressionBasedFilterInvocationSecurityMetadataSource - Adding web access control expression [permitAll] for any request
+2025-12-16 12:20:04.000 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@774304ca, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@303fbc4, org.springframework.security.web.context.SecurityContextPersistenceFilter@36a1fd20, org.springframework.security.web.header.HeaderWriterFilter@4a5fab78, org.springframework.web.filter.CorsFilter@4cd90c36, org.springframework.security.web.authentication.logout.LogoutFilter@56e8a8a0, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@10dbf660, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@28f8ce2e, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@aa23f11, org.springframework.security.web.session.SessionManagementFilter@2cebf82f, org.springframework.security.web.access.ExceptionTranslationFilter@399c408c, org.springframework.security.web.access.intercept.FilterSecurityInterceptor@656c5818]
+2025-12-16 12:21:13.253 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:21:13.253 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:21:13.281 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:13.281 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:13.341 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:13.341 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:13.373 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:21:13.373 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:21:13.378 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:21:13.379 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:21:14.180 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.200 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:21:14.206 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:14.205 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.210 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:14.213 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:14.215 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:21:14.220 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.223 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:21:14.232 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.230 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:21:14.234 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:14.236 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:14.243 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:14.249 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:21:14.250 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:21:14.268 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.274 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.275 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:14.340 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.345 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:14.348 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:24.027 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:21:24.028 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:24.028 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:21:24.030 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:24.031 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:24.032 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:21:24.033 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:21:24.037 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:24.038 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:21:24.040 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:21:24.064 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.070 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.072 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:24.072 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:21:24.077 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:24.081 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:24.082 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:21:24.083 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:21:24.109 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.115 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.119 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:24.155 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.157 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.157 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:21:24.158 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:21:24.158 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:21:24.161 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:21:24.162 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:21:24.163 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:21:24.230 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.237 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:21:24.238 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:23:50.833 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:23:50.834 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:23:50.835 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:23:50.836 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:23:50.837 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:23:50.840 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:23:50.840 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:23:50.842 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:23:50.844 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:23:50.845 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:23:50.867 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:50.873 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:50.874 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:23:50.875 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:23:50.877 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:23:50.879 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:23:50.880 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:23:50.881 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:23:50.903 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:50.909 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:50.910 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:23:50.948 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:50.951 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:50.951 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:23:50.952 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:23:50.953 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:23:50.955 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:23:50.956 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:23:50.957 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:23:51.022 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:51.026 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:23:51.026 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:05.896 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:24:05.897 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:24:05.898 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:05.898 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:05.900 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:05.900 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:05.902 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:24:05.902 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:24:05.903 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:24:05.903 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:24:05.929 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:05.932 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:05.933 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:05.935 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:24:05.936 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:05.938 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:05.940 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:24:05.941 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:24:05.963 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:05.969 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:05.971 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:06.011 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:06.015 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:06.015 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:06.017 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:24:06.017 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:06.021 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:06.024 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:24:06.025 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:24:06.113 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:06.116 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:06.116 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:43.913 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:24:43.914 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:24:43.915 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:43.915 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:43.917 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:43.916 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:43.918 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:24:43.918 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:24:43.919 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:24:43.920 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:24:43.943 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:43.946 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:43.946 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:43.948 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/providers/featured?limit=6
+2025-12-16 12:24:43.949 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:43.951 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:43.953 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/providers/featured?limit=6] with attributes [permitAll]
+2025-12-16 12:24:43.954 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/providers/featured?limit=6
+2025-12-16 12:24:43.977 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:43.979 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:43.980 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:44.001 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:44.004 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:44.005 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/stats/dashboard
+2025-12-16 12:24:44.005 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:24:44.005 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:24:44.007 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:24:44.008 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/stats/dashboard] with attributes [permitAll]
+2025-12-16 12:24:44.009 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/stats/dashboard
+2025-12-16 12:24:44.066 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:44.068 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:24:44.069 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:15.177 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/auth/login
+2025-12-16 12:25:15.179 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:15.184 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:15.184 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:15.196 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /api/auth/login
+2025-12-16 12:25:15.197 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:15.207 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:15.208 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [POST /api/auth/login] with attributes [permitAll]
+2025-12-16 12:25:15.210 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured POST /api/auth/login
+2025-12-16 12:25:16.085 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.089 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.090 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.744 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.744 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.745 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.745 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.746 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:16.746 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:16.746 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.746 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.746 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.748 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.749 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:16.749 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.750 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.750 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.756 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.757 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.758 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.758 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:16.759 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.760 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:16.760 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:16.760 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.761 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.761 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:16.763 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:16.764 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.798 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.802 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.802 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.802 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.803 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.804 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:16.805 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:16.805 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.811 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.813 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.813 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.814 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.816 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.817 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:16.818 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:16.819 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:16.822 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.826 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:16.826 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.827 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.828 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.828 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:16.829 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.833 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:16.834 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.836 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.836 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:16.838 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:25:16.839 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.840 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:16.840 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.862 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.864 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.864 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:16.892 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:16.893 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:16.894 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:16.896 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:25:16.897 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:16.917 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.919 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:16.920 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.368 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.369 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.370 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.368 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.370 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.373 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.371 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.372 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.375 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:34.376 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:34.376 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.376 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:34.376 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:34.376 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.377 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.378 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.382 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.383 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.383 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.384 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.385 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:34.386 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:34.387 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:34.387 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:34.388 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.389 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.407 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.407 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.410 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.410 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.410 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.411 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.410 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.412 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.411 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.412 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:34.411 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.413 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:34.414 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:34.415 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/kyc/status/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.416 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:25:34.417 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:25:34.431 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.434 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.434 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.435 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.435 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.436 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.454 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:34.454 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:34.454 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.455 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.457 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:34.457 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:25:34.458 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.458 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.463 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:34.463 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.464 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:34.466 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:25:34.467 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:34.489 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.491 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.491 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:25:34.492 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:34.493 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:25:34.495 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:25:34.496 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:25:34.496 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:25:34.512 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.514 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:25:34.515 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:04.391 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:26:04.392 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:04.394 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:26:04.395 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:04.400 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:26:04.400 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:04.401 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:26:04.405 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:26:04.407 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:26:04.448 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:04.449 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:04.450 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:04.472 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:26:04.472 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:04.473 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:26:04.474 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:04.478 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:26:04.478 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:04.480 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:26:04.482 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:26:04.483 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:26:04.503 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:04.505 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:04.506 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:34.824 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:26:34.826 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:34.827 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:26:34.828 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:34.835 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:26:34.837 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:34.839 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:26:34.841 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:26:34.842 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:26:34.872 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:34.875 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:34.876 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:35.298 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:26:35.300 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:35.302 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:26:35.302 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:26:35.307 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:26:35.308 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:26:35.310 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:26:35.312 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:26:35.313 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:26:35.339 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:35.342 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:26:35.343 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:04.809 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:27:04.810 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:04.812 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:27:04.812 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:04.817 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:27:04.821 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:04.823 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:27:04.825 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:27:04.825 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:27:04.853 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:04.856 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:04.857 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:05.183 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:27:05.185 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:05.187 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:27:05.187 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:05.191 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:27:05.192 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:05.193 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:27:05.197 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:27:05.198 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:27:05.219 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:05.223 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:05.223 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:34.382 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:27:34.383 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:34.384 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:27:34.384 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:34.387 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:27:34.388 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:34.390 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:27:34.391 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:27:34.393 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:27:34.420 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:34.422 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:34.423 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:34.481 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:27:34.481 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:34.482 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:27:34.483 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:27:34.486 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:27:34.486 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:27:34.489 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:27:34.490 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:27:34.491 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:27:34.506 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:34.508 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:27:34.508 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:04.815 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:28:04.817 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:04.819 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:28:04.820 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:04.825 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:28:04.827 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:04.829 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:28:04.831 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:28:04.831 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:28:04.854 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:04.857 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:04.858 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:05.199 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:28:05.201 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:05.202 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:28:05.203 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:05.210 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:28:05.211 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:05.213 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:28:05.216 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:28:05.217 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:28:05.246 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:05.250 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:05.250 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:34.809 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:28:34.810 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:34.813 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:28:34.815 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:34.822 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:28:34.824 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:34.825 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:28:34.826 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:28:34.830 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:28:34.858 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:34.861 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:34.862 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:35.212 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:28:35.213 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:35.215 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:28:35.216 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:28:35.222 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:28:35.223 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:28:35.224 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:28:35.226 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:28:35.227 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:28:35.254 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:35.257 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:28:35.257 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:00.841 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:00.842 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:00.845 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:30:00.847 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:00.855 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:00.857 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:00.859 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:30:00.861 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:30:00.862 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:00.888 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:00.892 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:00.894 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:01.233 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:01.234 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:01.236 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:30:01.237 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:01.244 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:01.245 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:01.247 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:30:01.248 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:30:01.249 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:01.274 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:01.278 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:01.279 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:12.973 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:12.973 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:12.974 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:30:12.974 [http-nio-8080-exec-4] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:12.977 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:12.978 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:12.980 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:30:12.981 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:30:12.981 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:12.995 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:12.996 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:12.996 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:13.047 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:13.048 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:13.049 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:30:13.050 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:13.053 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:13.054 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:13.055 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:30:13.056 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:30:13.056 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:13.071 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:13.072 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:13.073 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:34.377 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:34.378 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:34.379 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:30:34.379 [http-nio-8080-exec-10] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:34.384 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:34.385 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:34.387 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:30:34.389 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de] with attributes [permitAll]
+2025-12-16 12:30:34.389 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de
+2025-12-16 12:30:34.412 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:34.414 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:34.415 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:34.463 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:34.464 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:34.465 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store empty SecurityContext
+2025-12-16 12:30:34.465 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request
+2025-12-16 12:30:34.469 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:34.469 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Set SecurityContextHolder to empty SecurityContext
+2025-12-16 12:30:34.471 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-12-16 12:30:34.472 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.i.FilterSecurityInterceptor - Authorized filter invocation [GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count] with attributes [permitAll]
+2025-12-16 12:30:34.472 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /api/notifications/user/89601cab-5712-48d8-8686-025ae8a071de/unread-count
+2025-12-16 12:30:34.485 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:34.486 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Did not store anonymous SecurityContext
+2025-12-16 12:30:34.486 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.SecurityContextPersistenceFilter - Cleared SecurityContextHolder to complete request

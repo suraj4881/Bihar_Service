@@ -1,0 +1,120 @@
+═══════════════════════════════════════════════════════════════
+  MSG91 API KEY GENERATE KARNE KE SIMPLE STEPS
+═══════════════════════════════════════════════════════════════
+
+STEP 1: MSG91 Website Par Login
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Browser mein open karein: https://control.msg91.com/
+  2. Apna email aur password se login karein
+  3. Agar account nahi hai, pehle Sign Up karein
+
+
+STEP 2: API Section Mein Jayein
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Option A: Left Sidebar Se
+    → Left side mein "API" ya "API Settings" option dikhega
+    → Us par click karein
+
+  Option B: Direct URL Se
+    → Browser mein yeh URL open karein:
+      https://control.msg91.com/api
+      Ya
+      https://control.msg91.com/settings/api
+
+  Option C: Settings Menu Se
+    → Top menu mein "Settings" → "API" select karein
+
+
+STEP 3: API Key Generate Ya Copy Karein
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Agar API Key Already Hai:
+    → "Show" ya "Reveal" button par click karein
+    → API key copy kar lein (Ctrl+C)
+
+  Agar API Key Nahi Hai:
+    → "Generate New API Key" button par click karein
+    → Kuch details fill karein (optional)
+    → "Generate" par click karein
+    → API key generate ho jayega
+    → Copy kar lein
+
+
+STEP 4: API Key Ko application.properties Mein Paste Karein
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. File open karein: src/main/resources/application.properties
+  
+  2. Line 88 par jayein (SMS configuration section)
+  
+  3. Yeh line find karein:
+     sms.msg91.authkey=YOUR_MSG91_AUTH_KEY_HERE
+  
+  4. YOUR_MSG91_AUTH_KEY_HERE ko replace karein:
+     sms.msg91.authkey=PASTE_YOUR_API_KEY_HERE
+  
+  ⚠️ IMPORTANT:
+    ✅ No quotes lagane
+    ✅ No spaces before/after
+    ✅ Exact copy-paste karein
+
+
+STEP 5: Backend Restart Karein
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Terminal mein:
+    mvn spring-boot:run
+
+  Ya IDE se restart karein
+
+
+STEP 6: Test Karein
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Profile page par jayein
+  2. "Edit Phone" click karein
+  3. Aadhaar OTP send karein
+  4. Mobile par SMS check karein 📱
+
+
+═══════════════════════════════════════════════════════════════
+  EXAMPLE API KEY FORMAT
+═══════════════════════════════════════════════════════════════
+
+  Good Example:
+    sms.msg91.authkey=1234567890abcdefghijklmnopqrstuvwxyzABCDEF
+
+  Bad Examples:
+    ❌ sms.msg91.authkey="1234567890..."  (quotes nahi)
+    ❌ sms.msg91.authkey= 1234567890...   (space nahi)
+    ❌ sms.msg91.authkey=YOUR_MSG91_AUTH_KEY_HERE  (placeholder)
+
+
+═══════════════════════════════════════════════════════════════
+  AGAR PROBLEM AAYE
+═══════════════════════════════════════════════════════════════
+
+  ❌ API Key Dikhai Nahi De Raha:
+    → Account verify karein
+    → MSG91 support se contact: support@msg91.com
+
+  ❌ "Invalid API Key" Error:
+    → API key correctly copied hai ya nahi check karein
+    → No spaces/quotes verify karein
+    → Fresh API key generate karein
+
+  ❌ SMS Nahi Aa Raha:
+    → Backend logs check karein
+    → MSG91 dashboard mein SMS reports check karein
+    → Account balance check karein
+
+
+═══════════════════════════════════════════════════════════════
+  QUICK REFERENCE
+═══════════════════════════════════════════════════════════════
+
+  Website:        https://control.msg91.com/
+  API Section:   https://control.msg91.com/api
+  Support:        support@msg91.com
+  Config File:    src/main/resources/application.properties
+  Property:      sms.msg91.authkey=YOUR_KEY_HERE
+
+
+═══════════════════════════════════════════════════════════════
+
