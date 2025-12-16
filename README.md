@@ -140,7 +140,7 @@ window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
 }, auth);
 
 // 2. Send OTP
-const phoneNumber = '+919876543210'; // Must include +91
+const phoneNumber = '+91XXXXXXXXXX'; // Must include +91 (replace with actual phone number)
 const appVerifier = window.recaptchaVerifier;
 
 signInWithPhoneNumber(auth, phoneNumber, appVerifier)
@@ -371,7 +371,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📞 Support
 
-For support, email suraj4881@gmail.com or open an issue in the repository.
+For support, please open an issue in the repository.
 
 ## 🎉 Acknowledgments
 
@@ -384,5 +384,6 @@ For support, email suraj4881@gmail.com or open an issue in the repository.
 ---
 
 Made with ❤️ for Bihar Service Marketplace
-#   B i h a r _ S e r v i c e  
+#   B i h a r _ S e r v i c e 
+ 
  
