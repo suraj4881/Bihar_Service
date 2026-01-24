@@ -18,8 +18,6 @@ import {
   InputAdornment,
   Paper,
   Chip,
-  AppBar,
-  Toolbar,
   CircularProgress,
   Stepper,
   Step,
@@ -53,6 +51,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import AppBar from '../components/AppBar';
 import Logo from '../components/Logo';
 
 const ProfilePage: React.FC = () => {
@@ -169,7 +168,6 @@ const ProfilePage: React.FC = () => {
   // Camera capture handler
   const handleCameraClick = async () => {
     try {
-      console.log('📷 Requesting camera access...');
       setError('');
       setCameraReady(false);
       
@@ -181,13 +179,10 @@ const ProfilePage: React.FC = () => {
         } 
       });
       
-      console.log('✅ Camera access granted, stream:', stream);
-      console.log('📹 Video tracks:', stream.getVideoTracks().length);
       
       setCameraStream(stream);
       setCameraDialogOpen(true);
     } catch (error: any) {
-      console.error('❌ Camera error:', error);
       let errorMessage = 'Camera access denied. Please allow camera permission.';
       
       if (error.name === 'NotAllowedError') {
@@ -217,7 +212,6 @@ const ProfilePage: React.FC = () => {
           // Force play
           video.play()
             .then(() => {
-              console.log('✅ Video started playing');
               setCameraReady(true);
             })
             .catch(err => {
@@ -227,19 +221,16 @@ const ProfilePage: React.FC = () => {
             });
           
           const handleLoadedMetadata = () => {
-            console.log('✅ Video metadata loaded');
-            video.play().catch(err => {
-              console.error('Video play error on metadata:', err);
+            video.play().catch(() => {
+              // Ignore play errors
             });
           };
 
           const handleCanPlay = () => {
-            console.log('✅ Video can play');
             setCameraReady(true);
           };
 
           const handlePlaying = () => {
-            console.log('✅ Video is playing');
             setCameraReady(true);
           };
 
@@ -341,11 +332,9 @@ const ProfilePage: React.FC = () => {
         
         // Create file from blob and upload
         const file = new File([blob], `profile-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        console.log('Captured photo, uploading...', file.size, 'bytes');
         await uploadPhotoFile(file);
       }, 'image/jpeg', 0.9);
     } catch (error: any) {
-      console.error('Capture error:', error);
       setError('Failed to capture photo: ' + (error.message || 'Unknown error'));
     }
   };
@@ -430,7 +419,6 @@ const ProfilePage: React.FC = () => {
               }
             }
           } catch (err) {
-            console.error('Failed to refresh user data:', err);
           }
         }
         
@@ -528,7 +516,6 @@ const ProfilePage: React.FC = () => {
         const otp = data.data?.otp;
         if (otp) {
           alert(`🔑 OTP (Development Mode): ${otp}\n\nNote: In production, OTP will be sent via SMS.`);
-          console.log('🔑 OTP for Phone Change:', otp);
         }
         setSuccess(`✅ OTP sent to your registered phone number. ${otp ? `OTP: ${otp} (Check alert)` : 'Check backend logs for OTP.'}`);
       } else {
@@ -642,7 +629,6 @@ const ProfilePage: React.FC = () => {
         const otp = data.data?.otp;
         if (otp) {
           alert(`🔑 Email OTP (Development Mode): ${otp}\n\nNote: In production, OTP will be sent via email.`);
-          console.log('🔑 Email OTP for Phone Change:', otp);
         }
         setSuccess(`✅ OTP sent to your email address. ${otp ? `OTP: ${otp} (Check alert)` : 'Check backend logs for OTP.'}`);
         setPhoneChangeStep(2); // Move to new phone entry
@@ -817,61 +803,7 @@ const ProfilePage: React.FC = () => {
       background: 'linear-gradient(135deg, #FFF8E1 0%, #FFE082 30%, #FFF9C4 60%, #FFFFFF 100%)',
     }}>
       {/* Modern Header */}
-      <AppBar 
-        position="sticky" 
-        sx={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          borderBottom: '1px solid rgba(255,255,255,0.2)',
-        }}
-      >
-        <Toolbar sx={{ py: 1.5 }}>
-          <IconButton 
-            onClick={() => navigate('/')} 
-            sx={{ 
-              mr: 2,
-              bgcolor: 'rgba(102, 126, 234, 0.1)',
-              '&:hover': { bgcolor: 'rgba(102, 126, 234, 0.2)' },
-            }}
-          >
-            <ArrowBack />
-          </IconButton>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              flexGrow: 1, 
-              cursor: 'pointer',
-            }}
-            onClick={() => navigate('/')}
-          >
-            <Logo size="medium" showText={true} />
-          </Box>
-          <Button 
-            onClick={() => {
-              logout();
-              navigate('/');
-              window.location.reload();
-            }} 
-            variant="contained"
-            sx={{ 
-              textTransform: 'none',
-              background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-              borderRadius: 2,
-              px: 3,
-              fontWeight: 600,
-              boxShadow: '0 4px 15px rgba(255, 107, 53, 0.4)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #F7931E, #FF6B35)',
-                boxShadow: '0 6px 20px rgba(255, 107, 53, 0.6)',
-              },
-            }}
-          >
-            {t('logout') || 'Logout'}
-          </Button>
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="simple" position="sticky" showBackButton />
 
       <Container maxWidth="md" sx={{ py: 4 }}>
         {/* Page Title */}
@@ -1537,7 +1469,7 @@ const ProfilePage: React.FC = () => {
                 }}
               >
                 <Email sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle', color: '#FF6B35' }} />
-                support@biharseva.com
+                support@quicksevabihar.com
               </Typography>
               <Typography 
                 variant="body2" 
@@ -1605,7 +1537,7 @@ const ProfilePage: React.FC = () => {
                 color: 'rgba(255,255,255,0.7)',
               }}
             >
-              © {new Date().getFullYear()} BiharSeva. {t('All rights reserved.')}
+              © {new Date().getFullYear()} QuickSeva Bihar. {t('All rights reserved.')}
             </Typography>
           </Box>
         </Container>
@@ -1751,28 +1683,22 @@ const ProfilePage: React.FC = () => {
                   backgroundColor: '#000',
                 }}
                 onLoadedMetadata={() => {
-                  console.log('📹 Video metadata loaded');
                   if (videoRef.current) {
                     videoRef.current.play()
                       .then(() => {
-                        console.log('✅ Video playing after metadata');
                         setCameraReady(true);
                       })
                       .catch(err => {
-                        console.error('❌ Video play error:', err);
                       });
                   }
                 }}
                 onCanPlay={() => {
-                  console.log('📹 Video can play');
                   setCameraReady(true);
                 }}
                 onPlaying={() => {
-                  console.log('📹 Video is playing');
                   setCameraReady(true);
                 }}
                 onError={(e) => {
-                  console.error('❌ Video error:', e);
                   setError('Camera error. Please check permissions and try again.');
                   setCameraReady(false);
                 }}

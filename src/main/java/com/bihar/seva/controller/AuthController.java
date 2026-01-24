@@ -27,27 +27,22 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<User>> registerUser(@Valid @RequestBody RegisterRequestDTO requestDTO) {
         try {
-            // ✅ Log received data in controller
-            System.out.println("📥 AuthController - Received registration:");
-            System.out.println("   Name: " + requestDTO.getName());
-            System.out.println("   Email: " + requestDTO.getEmail());
-            System.out.println("   Role: " + requestDTO.getRole());
-            System.out.println("   Language: " + requestDTO.getLanguage());
-            System.out.println("   City: " + requestDTO.getCity());
+            logger.info("Received registration request for email: {}, role: {}", 
+                requestDTO.getEmail(), requestDTO.getRole());
             
             User user = authService.registerUser(requestDTO);
             
-            // ✅ Log saved user
-            System.out.println("💾 AuthController - User saved:");
-            System.out.println("   ID: " + user.getId());
-            System.out.println("   Role: " + user.getRole());
-            System.out.println("   Language: " + user.getLanguage());
+            logger.info("User registered successfully with ID: {}, role: {}", 
+                user.getId(), user.getRole());
             
             return ResponseEntity.ok(ApiResponse.success(user, "User registered successfully"));
-        } catch (Exception e) {
-            System.out.println("❌ AuthController - Error: " + e.getMessage());
-            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid registration request: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error during user registration", e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Registration failed. Please try again."));
         }
     }
 

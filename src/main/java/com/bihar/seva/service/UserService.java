@@ -5,13 +5,7 @@ import com.bihar.seva.dto.UserRegistrationDTO;
 import com.bihar.seva.exception.DuplicateResourceException;
 import com.bihar.seva.exception.ResourceNotFoundException;
 import com.bihar.seva.exception.ValidationException;
-import com.bihar.seva.model.Admin;
-import com.bihar.seva.model.Customer;
-import com.bihar.seva.model.Provider;
 import com.bihar.seva.model.User;
-import com.bihar.seva.repositories.AdminRepository;
-import com.bihar.seva.repositories.CustomerRepository;
-import com.bihar.seva.repositories.ProviderRepository;
 import com.bihar.seva.repositories.UserRepository;
 import com.bihar.seva.util.LoggingUtil;
 import org.slf4j.Logger;
@@ -38,16 +32,7 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     
     @Autowired
-    private UserRepository userRepository; // Legacy support
-    
-    @Autowired
-    private CustomerRepository customerRepository;
-    
-    @Autowired
-    private ProviderRepository providerRepository;
-    
-    @Autowired
-    private AdminRepository adminRepository;
+    private UserRepository userRepository;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -418,81 +403,7 @@ public class UserService {
             String encodedPath = java.net.URLEncoder.encode(photoPath, "UTF-8").replace("+", "%20");
             String photoUrl = "http://localhost:8080/api/files/serve?filePath=" + encodedPath;
             
-            // Try to find user in customers collection
-            Optional<Customer> customerOpt = customerRepository.findById(userId);
-            if (customerOpt.isPresent()) {
-                Customer customer = customerOpt.get();
-                
-                // Delete old photo if exists
-                if (StringUtils.hasText(customer.getProfilePhoto())) {
-                    try {
-                        String oldPath = customer.getProfilePhoto();
-                        if (oldPath.contains("/api/files/serve?filePath=")) {
-                            oldPath = oldPath.substring(oldPath.indexOf("filePath=") + 9);
-                            // URL decode if needed
-                            try {
-                                oldPath = java.net.URLDecoder.decode(oldPath, "UTF-8");
-                            } catch (Exception e) {
-                                // Already decoded or not encoded
-                            }
-                        }
-                        // Normalize path separators
-                        oldPath = oldPath.replace("\\", "/");
-                        fileUploadService.deleteFile(oldPath);
-                    } catch (Exception e) {
-                        logger.warn("Failed to delete old photo: {}", e.getMessage());
-                    }
-                }
-                
-                customer.setProfilePhoto(photoUrl);
-                customer.setUpdatedAt(LocalDateTime.now());
-                customerRepository.save(customer);
-                
-                logger.info("✅ Profile photo uploaded successfully for customer: {} - URL: {}", userId, photoUrl);
-                return convertCustomerToUser(customer);
-            }
-            
-            // Try to find user in providers collection
-            Optional<Provider> providerOpt = providerRepository.findById(userId);
-            if (providerOpt.isPresent()) {
-                Provider provider = providerOpt.get();
-                
-                // Delete old photo if exists
-                if (StringUtils.hasText(provider.getProfilePhoto())) {
-                    try {
-                        String oldPath = provider.getProfilePhoto();
-                        if (oldPath.contains("/api/files/serve?filePath=")) {
-                            oldPath = oldPath.substring(oldPath.indexOf("filePath=") + 9);
-                            // URL decode if needed
-                            try {
-                                oldPath = java.net.URLDecoder.decode(oldPath, "UTF-8");
-                            } catch (Exception e) {
-                                // Already decoded or not encoded
-                            }
-                        }
-                        // Normalize path separators
-                        oldPath = oldPath.replace("\\", "/");
-                        fileUploadService.deleteFile(oldPath);
-                    } catch (Exception e) {
-                        logger.warn("Failed to delete old photo: {}", e.getMessage());
-                    }
-                }
-                
-                provider.setProfilePhoto(photoUrl);
-                provider.setUpdatedAt(LocalDateTime.now());
-                providerRepository.save(provider);
-                
-                logger.info("✅ Profile photo uploaded successfully for provider: {} - URL: {}", userId, photoUrl);
-                return convertProviderToUser(provider);
-            }
-            
-            // Try to find user in admins collection
-            Optional<Admin> adminOpt = adminRepository.findById(userId);
-            if (adminOpt.isPresent()) {
-                // Admins might not have profilePhoto field, but we'll skip for now
-                logger.info("✅ Admin photo upload skipped (not implemented) - ID: {}", userId);
-                throw new ValidationException("Profile photo upload not supported for admin accounts");
-            }
+            // All users are now in User collection with roles
             
             // Try legacy users collection
             Optional<User> userOpt = userRepository.findById(userId);
@@ -535,61 +446,7 @@ public class UserService {
         }
     }
     
-    /**
-     * Convert Customer to User (for backward compatibility)
-     */
-    private User convertCustomerToUser(Customer customer) {
-        User user = new User();
-        user.setId(customer.getId());
-        user.setName(customer.getName());
-        user.setEmail(customer.getEmail());
-        user.setPhone(customer.getPhone());
-        user.setPassword(customer.getPassword());
-        user.setLanguage(customer.getLanguage());
-        user.setAddress(customer.getAddress());
-        user.setCity(customer.getCity());
-        user.setPincode(customer.getPincode());
-        user.setProfilePhoto(customer.getProfilePhoto());
-        user.setActive(customer.isActive());
-        user.setVerified(customer.isVerified());
-        user.setOnline(customer.isOnline());
-        user.setLastSeen(customer.getLastSeen());
-        user.setVerificationCode(customer.getVerificationCode());
-        user.setCreatedAt(customer.getCreatedAt());
-        user.setUpdatedAt(customer.getUpdatedAt());
-        user.setFavoriteProviders(customer.getFavoriteProviders());
-        user.setRating(customer.getRating());
-        user.setTotalBookings(customer.getTotalBookings());
-        user.setRole("CUSTOMER");
-        return user;
-    }
-    
-    /**
-     * Convert Provider to User (for backward compatibility)
-     */
-    private User convertProviderToUser(Provider provider) {
-        User user = new User();
-        user.setId(provider.getId());
-        user.setName(provider.getName());
-        user.setEmail(provider.getEmail());
-        user.setPhone(provider.getPhone());
-        user.setPassword(provider.getPassword());
-        user.setAddress(provider.getAddress());
-        user.setCity(provider.getCity());
-        user.setPincode(provider.getPincode());
-        user.setProfilePhoto(provider.getProfilePhoto());
-        user.setLanguage(provider.getLanguage());
-        user.setActive(provider.isActive());
-        user.setVerified(provider.isVerified());
-        user.setOnline(provider.isOnline());
-        user.setLastSeen(provider.getLastSeen());
-        user.setCreatedAt(provider.getCreatedAt());
-        user.setUpdatedAt(provider.getUpdatedAt());
-        user.setRating(provider.getRating());
-        user.setTotalBookings(provider.getTotalBookings());
-        user.setRole("PROVIDER");
-        return user;
-    }
+    // Old convertCustomerToUser and convertProviderToUser methods removed - all users are now in User collection
     
     /**
      * Send Aadhaar OTP for phone number change verification
@@ -774,10 +631,8 @@ public class UserService {
         LoggingUtil.logMethodEntry(logger, "verifyLastTransactionAmount", userId);
         
         try {
-            // Verify user exists (check all collections)
-            if (!userRepository.existsById(userId) && 
-                !customerRepository.existsById(userId) && 
-                !providerRepository.existsById(userId)) {
+            // Verify user exists
+            if (!userRepository.existsById(userId)) {
                 throw new ResourceNotFoundException("User not found with ID: " + userId);
             }
             
@@ -857,7 +712,7 @@ public class UserService {
             
             // Send OTP via email
             try {
-                String subject = "Phone Number Change Verification - BiharSeva";
+                String subject = "Phone Number Change Verification - QuickSeva Bihar";
                 String body = buildPhoneChangeEmailBody(user.getName(), otp);
                 emailService.sendHtmlEmail(user.getEmail(), subject, body);
                 logger.info("✅ OTP sent successfully via email to: {}", user.getEmail());
@@ -1057,7 +912,7 @@ public class UserService {
             "</div>" +
             "<p>This OTP is valid for 10 minutes.</p>" +
             "<p>If you did not request this change, please contact support immediately.</p>" +
-            "<p style='color: #666; font-size: 12px; margin-top: 30px;'>Best regards,<br>BiharSeva Team</p>" +
+            "<p style='color: #666; font-size: 12px; margin-top: 30px;'>Best regards,<br>QuickSeva Bihar Team</p>" +
             "</div></body></html>";
     }
     

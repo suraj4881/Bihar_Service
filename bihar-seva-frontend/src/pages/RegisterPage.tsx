@@ -30,14 +30,17 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useThemeMode } from '../contexts/ThemeContext';
 import Logo from '../components/Logo';
 import { BIHAR_CITIES } from '../utils/constants';
 import { getCurrentLocation } from '../utils/helpers';
+import AppBar from '../components/AppBar';
+import { useAuth } from '../contexts/AuthContext';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
-  
+  const { mode } = useThemeMode();
   // ✅ Sync language on mount from localStorage (set on HomePage)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -75,16 +78,17 @@ const RegisterPage: React.FC = () => {
     '& .MuiOutlinedInput-root': {
       borderRadius: 2,
       transition: 'all 0.3s',
+      bgcolor: mode === 'dark' ? '#1E293B' : '#F8FAFC',
       '&:hover fieldset': {
-        borderColor: '#667eea',
+        borderColor: '#3B82F6',
       },
       '&.Mui-focused fieldset': {
-        borderColor: '#667eea',
+        borderColor: '#3B82F6',
         borderWidth: 2,
       },
     },
     '& .MuiInputLabel-root.Mui-focused': {
-      color: '#667eea',
+      color: '#3B82F6',
     },
   };
 
@@ -161,13 +165,18 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
+    <Box>
+      {/* Navigation Bar */}
+      <AppBar variant="default" position="sticky" />
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+        background: mode === 'dark'
+          ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%)'
+          : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
         display: 'flex',
         alignItems: 'center',
-        py: 4,
+        py: { xs: 2, md: 3 },
         position: 'relative',
         overflow: 'hidden',
         '&::before': {
@@ -177,7 +186,11 @@ const RegisterPage: React.FC = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'radial-gradient(circle at 20% 50%, rgba(102,126,234,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(118,75,162,0.3) 0%, transparent 50%)',
+          backgroundImage: mode === 'dark'
+            ? `radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+               radial-gradient(circle at 80% 30%, rgba(96, 165, 250, 0.1) 0%, transparent 50%)`
+            : `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+               radial-gradient(circle at 80% 30%, rgba(255,255,255,0.1) 0%, transparent 50%)`,
           pointerEvents: 'none',
         },
       }}
@@ -186,24 +199,36 @@ const RegisterPage: React.FC = () => {
         <Card
           elevation={24}
           sx={{
-            borderRadius: 5,
+            borderRadius: { xs: 3, md: 4 },
             overflow: 'hidden',
-            background: 'rgba(255, 255, 255, 0.98)',
+            background: mode === 'dark' ? '#1E293B' : 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(20px)',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+            boxShadow: mode === 'dark'
+              ? '0 20px 60px rgba(0, 0, 0, 0.8)'
+              : '0 20px 60px rgba(0, 0, 0, 0.3)',
+            border: mode === 'dark' ? '1px solid #334155' : 'none',
+            maxHeight: { xs: '95vh', md: '90vh' },
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <Grid container>
-            {/* Left Side - Branding */}
+            {/* Left Side - Branding - Hidden on small screens, compact on medium */}
             <Grid
               item
-              xs={12}
-              md={5}
+              xs={0}
+              md={4}
               sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                p: { xs: 4, md: 5 },
-                display: 'flex',
+                display: { xs: 'none', md: 'flex' },
+                background: mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.3) 100%)'
+                  : 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.25) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: mode === 'dark'
+                  ? '1px solid rgba(59, 130, 246, 0.3)'
+                  : '1px solid rgba(59, 130, 246, 0.2)',
+                color: mode === 'dark' ? '#E2E8F0' : 'white',
+                p: 3,
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
@@ -224,17 +249,17 @@ const RegisterPage: React.FC = () => {
               }}
             >
               <Box sx={{ position: 'relative', zIndex: 1 }}>
-                <Logo size="large" showText />
+                <Logo size="medium" showText />
                 
                 {/* Animated Worker Icon */}
                 <Box
                   sx={{
-                    fontSize: '5rem',
-                    my: 3,
+                    fontSize: '3.5rem',
+                    my: 2,
                     animation: 'bounce 2s ease-in-out infinite',
                     '@keyframes bounce': {
                       '0%, 100%': { transform: 'translateY(0)' },
-                      '50%': { transform: 'translateY(-20px)' },
+                      '50%': { transform: 'translateY(-15px)' },
                     },
                   }}
                 >
@@ -242,10 +267,10 @@ const RegisterPage: React.FC = () => {
                 </Box>
                 
                 <Typography 
-                  variant="h4" 
+                  variant="h5" 
                   sx={{ 
-                    mt: 2, 
-                    mb: 2, 
+                    mt: 1, 
+                    mb: 1, 
                     fontWeight: 800,
                     fontFamily: '"Poppins", sans-serif',
                     color: 'white',
@@ -256,11 +281,11 @@ const RegisterPage: React.FC = () => {
                 </Typography>
                 
                 <Typography 
-                  variant="body1" 
+                  variant="body2" 
                   sx={{ 
                     color: 'rgba(255, 255, 255, 0.95)',
-                    fontSize: '1rem',
-                    lineHeight: 1.6,
+                    fontSize: '0.875rem',
+                    lineHeight: 1.5,
                     maxWidth: '90%',
                     mx: 'auto',
                     fontWeight: 500,
@@ -271,12 +296,12 @@ const RegisterPage: React.FC = () => {
                 
                 <Box 
                   sx={{ 
-                    mt: 4, 
-                    p: 3, 
+                    mt: 2, 
+                    p: 2, 
                     bgcolor: 'rgba(255, 255, 255, 0.15)',
-                    borderRadius: 3,
+                    borderRadius: 2,
                     backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                   }}
                 >
                   {[
@@ -291,17 +316,17 @@ const RegisterPage: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        mb: index < 3 ? 1.5 : 0,
-                        fontSize: '1rem',
-                        fontWeight: 700,
+                        mb: index < 3 ? 1 : 0,
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
                         color: 'white',
                       }}
                     >
                       <Box
                         component="span"
                         sx={{
-                          mr: 1.5,
-                          fontSize: '1.3rem',
+                          mr: 1,
+                          fontSize: '1.1rem',
                         }}
                       >
                         {item.icon}
@@ -317,33 +342,35 @@ const RegisterPage: React.FC = () => {
             <Grid 
               item 
               xs={12} 
-              md={7}
+              md={8}
               sx={{
-                background: 'linear-gradient(135deg, #FFF5EB 0%, #FFE5D0 50%, #FFEFD5 100%)',
+                background: mode === 'dark' ? '#1E293B' : '#F8FAFC',
               }}
             >
-              <CardContent sx={{ p: { xs: 3, md: 5 } }}>
-                <Box sx={{ mb: 4 }}>
+              <CardContent sx={{ p: { xs: 2, md: 2.5 }, flex: 1, overflowY: 'auto', '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { bgcolor: '#3B82F6', borderRadius: '3px' } }}>
+                <Box sx={{ mb: 2 }}>
                   <Typography 
-                    variant="h3" 
+                    variant="h5" 
                     gutterBottom 
                   sx={{ 
                     fontWeight: 800,
                     fontFamily: '"Poppins", sans-serif',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: mode === 'dark'
+                      ? 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)'
+                      : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
                     backgroundClip: 'text',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
-                    mb: 1,
+                    mb: 0.5,
                   }}
                   >
                     {t('register.title')}
                   </Typography>
                   <Typography 
-                    variant="body1" 
+                    variant="body2" 
                     sx={{ 
                       color: 'text.secondary',
-                      fontSize: '1rem',
+                      fontSize: '0.875rem',
                     }}
                   >
                     {t('register.fillDetails')}
@@ -351,18 +378,18 @@ const RegisterPage: React.FC = () => {
                 </Box>
 
                 {error && (
-                  <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+                  <Alert severity="error" sx={{ mb: 1.5, py: 0.5 }} onClose={() => setError('')}>
                     {error}
                   </Alert>
                 )}
 
-                <Grid container spacing={2.5}>
+                <Grid container spacing={1.5}>
                   {/* Account Type Selection */}
                   <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 1.5, fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary', fontSize: '0.875rem' }}>
                       {t('register.registerAs')}: *
                     </Typography>
-                    <Grid container spacing={2} sx={{ maxWidth: '380px', justifyContent: 'flex-start' }}>
+                    <Grid container spacing={1.5} sx={{ maxWidth: '100%', justifyContent: 'flex-start' }}>
                       {[
                         { value: 'CUSTOMER', label: t('register.customer'), icon: <PersonOutline />, desc: 'Book services', enabled: true },
                         { value: 'PROVIDER', label: t('register.provider'), icon: <Work />, desc: 'Offer services', enabled: true },
@@ -378,23 +405,23 @@ const RegisterPage: React.FC = () => {
                             sx={{
                               cursor: 'pointer',
                               height: '100%',
-                              minHeight: '65px',
+                              minHeight: '50px',
                               display: 'flex',
                               alignItems: 'center',
-                              border: formData.role === type.value ? '3px solid #667eea' : '2px solid #d1d5db',
+                              border: formData.role === type.value ? '2px solid #3B82F6' : '1px solid #d1d5db',
                               bgcolor: formData.role === type.value 
-                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                                : '#f9fafb',
+                                ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' 
+                                : mode === 'dark' ? '#1E293B' : '#f9fafb',
                               background: formData.role === type.value 
-                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                                : '#f9fafb',
+                                ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' 
+                                : mode === 'dark' ? '#1E293B' : '#f9fafb',
                               transition: 'all 0.3s',
-                              boxShadow: formData.role === type.value ? '0 4px 15px rgba(102, 126, 234, 0.3)' : 1,
+                              boxShadow: formData.role === type.value ? '0 4px 15px rgba(59, 130, 246, 0.3)' : 1,
                               '&:hover': {
-                                borderColor: '#667eea',
+                                borderColor: '#3B82F6',
                                 transform: 'translateY(-2px)',
                                 boxShadow: formData.role === type.value 
-                                  ? '0 6px 20px rgba(102, 126, 234, 0.4)' 
+                                  ? '0 6px 20px rgba(59, 130, 246, 0.4)' 
                                   : 3,
                               },
                             }}
@@ -437,12 +464,12 @@ const RegisterPage: React.FC = () => {
 
                   {/* Language Selection */}
                   <Grid item xs={12}>
-                    <Typography variant="body2" sx={{ mb: 1.5, fontWeight: 700, color: 'text.primary', fontSize: '0.95rem' }}>
+                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 700, color: 'text.primary', fontSize: '0.875rem' }}>
                       {t('register.language')}: *
                     </Typography>
-                    <Grid container spacing={2} sx={{ maxWidth: '380px', justifyContent: 'flex-start' }}>
+                    <Grid container spacing={1.5} sx={{ maxWidth: '100%', justifyContent: 'flex-start' }}>
                       {[
-                        { value: 'English', label: t('register.english'), flag: '🇬🇧', subtitle: 'Default' },
+                        { value: 'English', label: t('register.english'), flag: 'IN', subtitle: 'Default' },
                         { value: 'Hindi', label: t('register.hindi'), flag: '🇮🇳', subtitle: 'भारतीय' },
                       ].map((lang) => (
                         <Grid item xs={6} key={lang.value}>
@@ -458,23 +485,23 @@ const RegisterPage: React.FC = () => {
                             sx={{
                               cursor: 'pointer',
                               height: '100%',
-                              minHeight: '65px',
+                              minHeight: '50px',
                               display: 'flex',
                               alignItems: 'center',
-                              border: formData.language === lang.value ? '3px solid #667eea' : '2px solid #d1d5db',
+                              border: formData.language === lang.value ? '2px solid #3B82F6' : '1px solid #d1d5db',
                               bgcolor: formData.language === lang.value 
-                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                                : '#f9fafb',
+                                ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' 
+                                : mode === 'dark' ? '#1E293B' : '#f9fafb',
                               background: formData.language === lang.value 
-                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                                : '#f9fafb',
+                                ? 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' 
+                                : mode === 'dark' ? '#1E293B' : '#f9fafb',
                               transition: 'all 0.3s',
-                              boxShadow: formData.language === lang.value ? '0 4px 15px rgba(102, 126, 234, 0.3)' : 1,
+                              boxShadow: formData.language === lang.value ? '0 4px 15px rgba(59, 130, 246, 0.3)' : 1,
                               '&:hover': {
-                                borderColor: '#667eea',
+                                borderColor: '#3B82F6',
                                 transform: 'translateY(-2px)',
                                 boxShadow: formData.language === lang.value 
-                                  ? '0 6px 20px rgba(102, 126, 234, 0.4)' 
+                                  ? '0 6px 20px rgba(59, 130, 246, 0.4)' 
                                   : 3,
                               },
                             }}
@@ -519,16 +546,18 @@ const RegisterPage: React.FC = () => {
                     </Grid>
                   </Grid>
 
-                  <Grid item xs={12}>
+                  {/* Name and Email in same row */}
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       label={t('register.name')}
                       value={formData.name}
                       onChange={(e) => handleChange('name', e.target.value)}
+                      size="small"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Person sx={{ color: '#667eea' }} />
+                            <Person sx={{ color: '#3B82F6', fontSize: 20 }} />
                           </InputAdornment>
                         ),
                       }}
@@ -537,17 +566,18 @@ const RegisterPage: React.FC = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       label={t('register.email')}
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleChange('email', e.target.value)}
+                      size="small"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Email sx={{ color: '#667eea' }} />
+                            <Email sx={{ color: '#3B82F6', fontSize: 20 }} />
                           </InputAdornment>
                         ),
                       }}
@@ -556,17 +586,19 @@ const RegisterPage: React.FC = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  {/* Phone and City in same row */}
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       label={t('register.phone')}
                       value={formData.phone}
                       onChange={(e) => handleChange('phone', e.target.value)}
                       placeholder="98XXXXXXXX"
+                      size="small"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Phone sx={{ color: '#667eea' }} />
+                            <Phone sx={{ color: '#3B82F6', fontSize: 20 }} />
                           </InputAdornment>
                         ),
                       }}
@@ -575,11 +607,12 @@ const RegisterPage: React.FC = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
                     <Autocomplete
                       options={BIHAR_CITIES}
                       value={formData.city}
                       onChange={(_, newValue) => handleChange('city', newValue || 'Patna')}
+                      size="small"
                       renderInput={(params) => (
                         <TextField
                           {...params}
@@ -590,21 +623,21 @@ const RegisterPage: React.FC = () => {
                             startAdornment: (
                               <>
                                 <InputAdornment position="start">
-                                  <LocationOn sx={{ color: '#667eea' }} />
+                                  <LocationOn sx={{ color: '#3B82F6', fontSize: 20 }} />
                                 </InputAdornment>
                                 {params.InputProps.startAdornment}
                               </>
                             ),
                             endAdornment: (
                               <>
-                                {locationLoading ? <CircularProgress size={20} sx={{ color: '#667eea' }} /> : null}
+                                {locationLoading ? <CircularProgress size={18} sx={{ color: '#3B82F6' }} /> : null}
                                 {params.InputProps.endAdornment}
                                 <IconButton
                                   size="small"
                                   onClick={handleGetLocation}
                                   disabled={locationLoading}
                                   title={t('register.getLocation')}
-                                  sx={{ color: '#667eea' }}
+                                  sx={{ color: '#3B82F6', p: 0.5 }}
                                 >
                                   <MyLocation fontSize="small" />
                                 </IconButton>
@@ -616,23 +649,25 @@ const RegisterPage: React.FC = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  {/* Password and Confirm Password in same row */}
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       label={t('register.password')}
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => handleChange('password', e.target.value)}
+                      size="small"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Lock sx={{ color: '#667eea' }} />
+                            <Lock sx={{ color: '#3B82F6', fontSize: 20 }} />
                           </InputAdornment>
                         ),
                         endAdornment: (
                           <InputAdornment position="end">
-                            <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
+                            <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small">
+                              {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                             </IconButton>
                           </InputAdornment>
                         ),
@@ -642,17 +677,18 @@ const RegisterPage: React.FC = () => {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
                       label={t('register.confirmPassword')}
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
                       onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                      size="small"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Lock sx={{ color: '#667eea' }} />
+                            <Lock sx={{ color: '#3B82F6', fontSize: 20 }} />
                           </InputAdornment>
                         ),
                         endAdornment: (
@@ -660,8 +696,9 @@ const RegisterPage: React.FC = () => {
                             <IconButton
                               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                               edge="end"
+                              size="small"
                             >
-                              {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                              {showConfirmPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                             </IconButton>
                           </InputAdornment>
                         ),
@@ -675,31 +712,32 @@ const RegisterPage: React.FC = () => {
                 <Button
                   fullWidth
                   variant="contained"
-                  size="large"
+                  size="medium"
                   onClick={handleSubmit}
                   disabled={loading}
                   sx={{
-                    mt: 4,
-                    py: 1.8,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    mt: 2,
+                    py: 1.2,
+                    background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
                     color: 'white',
-                    boxShadow: '0 4px 20px rgba(102,126,234,0.4)',
+                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #5568d3 0%, #6a4294 100%)',
-                      boxShadow: '0 6px 25px rgba(102,126,234,0.5)',
+                      background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
+                      boxShadow: '0 12px 32px rgba(59, 130, 246, 0.5)',
                       transform: 'translateY(-2px)',
                     },
                     fontWeight: 700,
-                    fontSize: '1.1rem',
+                    fontSize: '1rem',
                     borderRadius: 2,
                     transition: 'all 0.3s',
                     textTransform: 'none',
                   }}
                 >
-                  {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : t('register.submit') + ' 🚀'}
+                  {loading ? <CircularProgress size={20} sx={{ color: 'white' }} /> : t('register.submit') + ' 🚀'}
                 </Button>
 
-                <Divider sx={{ my: 3, fontWeight: 600, color: 'text.secondary' }}>{t('login.or')}</Divider>
+                {/* OTP Feature - Disabled for now. Enable when OTP feature is ready */}
+                {/* <Divider sx={{ my: 3, fontWeight: 600, color: 'text.secondary' }}>{t('login.or')}</Divider>
 
                 <Button
                   fullWidth
@@ -726,26 +764,26 @@ const RegisterPage: React.FC = () => {
                   }}
                 >
                   {t('login.emailOtp')}
-                </Button>
+                </Button> */}
 
-                <Box sx={{ textAlign: 'center', mt: 3 }}>
-                  <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.875rem' }}>
                     {t('register.haveAccount')}{' '}
                     <Link
                       onClick={() => navigate('/login')}
                       sx={{
-                        color: '#667eea',
+                        color: '#3B82F6',
                         fontWeight: 700,
                         cursor: 'pointer',
                         textDecoration: 'none',
                         transition: 'all 0.2s',
                         '&:hover': { 
                           textDecoration: 'underline',
-                          color: '#764ba2',
+                          color: '#2563EB',
                         },
                       }}
                     >
-                      {t('register.signIn')} →
+                      {t('signIn')} →
                     </Link>
                   </Typography>
                   
@@ -753,9 +791,9 @@ const RegisterPage: React.FC = () => {
                     variant="caption" 
                     sx={{ 
                       display: 'block', 
-                      mt: 3, 
+                      mt: 1.5, 
                       color: 'text.secondary',
-                      fontSize: '0.8rem',
+                      fontSize: '0.75rem',
                     }}
                   >
                     By signing up, you agree to our Terms of Service and Privacy Policy
@@ -767,6 +805,8 @@ const RegisterPage: React.FC = () => {
         </Card>
       </Container>
     </Box>
+    </Box>
+
   );
 };
 

@@ -89,7 +89,6 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       }
     } catch (err) {
       setError('Unable to retrieve your location');
-      console.error('Location error:', err);
     } finally {
       setLoading(false);
     }
@@ -107,7 +106,6 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       try {
         setLocation(JSON.parse(storedLocation));
       } catch (err) {
-        console.error('Error parsing stored location:', err);
       }
     }
   }, []);

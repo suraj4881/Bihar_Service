@@ -3,6 +3,7 @@ package com.bihar.seva.config;
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.IndexOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,42 @@ public class MongoIndexFixer implements CommandLineRunner {
                 }
             } else {
                 log.debug("ℹ️  Phone index (phone_1) does not exist - skipping drop");
+            }
+            
+            // Fix old Service text index conflict and create new one
+            MongoCollection<Document> servicesCollection = database.getCollection("services");
+            if (servicesCollection != null) {
+                List<Document> serviceIndexes = new ArrayList<>();
+                servicesCollection.listIndexes().into(serviceIndexes);
+                
+                // Drop old Service_TextIndex if exists
+                for (Document index : serviceIndexes) {
+                    String indexName = index.getString("name");
+                    if ("Service_TextIndex".equals(indexName) || "DynamicService_TextIndex".equals(indexName)) {
+                        try {
+                            servicesCollection.dropIndex(indexName);
+                            log.info("✅ Dropped old text index: {}", indexName);
+                        } catch (MongoCommandException e) {
+                            if (e.getCode() == 27) {
+                                log.debug("ℹ️  Index {} not found - already removed", indexName);
+                            } else {
+                                log.warn("⚠️  Could not drop index {}: {}", indexName, e.getMessage());
+                            }
+                        } catch (Exception e) {
+                            log.warn("⚠️  Unexpected error dropping index {}: {}", indexName, e.getMessage());
+                        }
+                    }
+                }
+                
+                // Create new text index on serviceName field
+                try {
+                    Document indexDefinition = new Document("serviceName", "text");
+                    IndexOptions indexOptions = new IndexOptions().name("DynamicService_TextIndex");
+                    servicesCollection.createIndex(indexDefinition, indexOptions);
+                    log.info("✅ Created new text index on serviceName field");
+                } catch (Exception e) {
+                    log.warn("⚠️  Could not create text index (may already exist): {}", e.getMessage());
+                }
             }
             
             log.info("✅ MongoDB index check completed!");

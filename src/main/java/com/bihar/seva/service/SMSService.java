@@ -56,7 +56,7 @@ public class SMSService {
         log.info("📞 ========================================");
         
         String message = String.format(
-            "Your BiharSeva OTP for %s is %s. Valid for 5 minutes. Do not share with anyone. - BiharSeva",
+            "Your QuickSeva Bihar OTP for %s is %s. Valid for 5 minutes. Do not share with anyone. - QuickSeva Bihar",
             purpose,
             otp
         );

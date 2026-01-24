@@ -90,7 +90,7 @@ public class UserController {
     @GetMapping("/{id}/kyc-status")
     public ResponseEntity<ApiResponse<Object>> getUserKYCStatus(@PathVariable String id) {
         try {
-            Object kycStatus = kycService.getKYCStatus(id);
+            Object kycStatus = kycService.getAggregatedKYCStatus(id);
             return ResponseEntity.ok(ApiResponse.success(kycStatus, "KYC status retrieved successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

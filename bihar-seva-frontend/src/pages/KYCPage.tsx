@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Container, Typography, Card, CardContent } from '@mui/material';
+import AppBar from '../components/AppBar';
 
 const KYCPage: React.FC = () => {
   return (

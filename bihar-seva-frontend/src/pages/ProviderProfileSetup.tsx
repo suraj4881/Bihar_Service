@@ -26,6 +26,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import AppBar from '../components/AppBar';
 
 const ProviderProfileSetup: React.FC = () => {
   const navigate = useNavigate();

@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import { Email, CheckCircle, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import AppBar from '../components/AppBar';
 import Logo from '../components/Logo';
 
 const EmailOTPPage: React.FC = () => {

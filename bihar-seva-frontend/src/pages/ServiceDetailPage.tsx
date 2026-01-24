@@ -25,6 +25,7 @@ import {
 import { Service } from '../types/service';
 import { serviceService } from '../services/serviceService';
 import { useLanguage } from '../contexts/LanguageContext';
+import AppBar from '../components/AppBar';
 
 const ServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BIHAR_CITIES } from '../utils/constants';
+import AppBar from '../components/AppBar';
 
 const CustomerProfileSetup: React.FC = () => {
   const navigate = useNavigate();

@@ -27,10 +27,22 @@ import {
   CreditCard,
   ArrowBack,
   PhotoCamera,
+  UploadFile,
+  Image,
+  Description,
+  Badge,
+  Person,
+  Pending,
+  Cancel,
+  VerifiedUser,
+  Refresh,
+  Assignment,
+  Security,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import AppBar from '../components/AppBar';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -62,10 +74,89 @@ const KYCVerificationPage: React.FC = () => {
       }
     }
   }, []);
+  
+  // Fetch KYC status on mount
+  useEffect(() => {
+    fetchKYCStatus();
+  }, [user?.id]);
+  
+  const fetchKYCStatus = async () => {
+    if (!user?.id) {
+      setKycLoading(false);
+      return;
+    }
+    
+    setKycLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/kyc/status/${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.data) {
+        const statusData = data.data;
+        setKycStatus({
+          status: statusData.status || null,
+          aadhaarSubmitted: statusData.aadhaarSubmitted,
+          panSubmitted: statusData.panSubmitted,
+          selfieSubmitted: statusData.selfieSubmitted,
+          aadhaarStatus: statusData.aadhaarStatus,
+          panStatus: statusData.panStatus,
+          selfieStatus: statusData.selfieStatus,
+          rejectionReason: statusData.rejectionReason,
+          verifiedAt: statusData.verifiedAt,
+          submittedAt: statusData.submittedAt,
+          aadhaarFrontUrl: statusData.aadhaarFrontUrl,
+          aadhaarBackUrl: statusData.aadhaarBackUrl,
+          panImageUrl: statusData.panImageUrl,
+          selfieImageUrl: statusData.selfieImageUrl,
+        });
+        
+        // If documents are submitted, show status view
+        if (statusData.aadhaarSubmitted || statusData.panSubmitted || statusData.selfieSubmitted) {
+          setViewMode('status');
+        } else {
+          setViewMode('upload');
+        }
+      } else {
+        setKycStatus(null);
+        setViewMode('upload');
+      }
+    } catch (error) {
+      setKycStatus(null);
+      setViewMode('upload');
+    } finally {
+      setKycLoading(false);
+    }
+  };
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  
+  // KYC Status State
+  const [kycStatus, setKycStatus] = useState<{
+    status: 'PENDING' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED' | null;
+    aadhaarSubmitted?: boolean;
+    panSubmitted?: boolean;
+    selfieSubmitted?: boolean;
+    aadhaarStatus?: string;
+    panStatus?: string;
+    selfieStatus?: string;
+    rejectionReason?: string;
+    verifiedAt?: string;
+    submittedAt?: string;
+    aadhaarFrontUrl?: string;
+    aadhaarBackUrl?: string;
+    panImageUrl?: string;
+    selfieImageUrl?: string;
+  } | null>(null);
+  const [kycLoading, setKycLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'upload' | 'status'>('upload');
 
   // Aadhaar Tab State
   const [aadhaarMethod, setAadhaarMethod] = useState(0); // 0 = Manual Upload, 1 = OTP Verification
@@ -95,6 +186,12 @@ const KYCVerificationPage: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // File input refs
+  const aadhaarFrontInputRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackInputRef = useRef<HTMLInputElement>(null);
+  const panInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
 
   const steps = ['Aadhaar Verification', 'PAN Card', 'Selfie Verification', 'Review & Submit'];
 
@@ -104,10 +201,14 @@ const KYCVerificationPage: React.FC = () => {
     setFile: React.Dispatch<React.SetStateAction<File | null>>,
     setPreview: React.Dispatch<React.SetStateAction<string>>
   ) => {
+    if (!file) return;
     setFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreview(e.target?.result as string);
+      const result = e.target?.result as string;
+      if (result) {
+        setPreview(result);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -121,7 +222,7 @@ const KYCVerificationPage: React.FC = () => {
     
     setLoading(true);
     try {
-      // Call Aadhaar OTP API (Mock for now)
+      // Call Aadhaar OTP API
       await new Promise(resolve => setTimeout(resolve, 2000));
       setOtpSent(true);
       setError('');
@@ -141,7 +242,7 @@ const KYCVerificationPage: React.FC = () => {
     
     setLoading(true);
     try {
-      // Call Aadhaar verification API (Mock for now)
+      // Call Aadhaar verification API
       await new Promise(resolve => setTimeout(resolve, 2000));
       setAadhaarVerified(true);
       setError('');
@@ -234,44 +335,88 @@ const KYCVerificationPage: React.FC = () => {
 
   const handleSubmit = async () => {
     setLoading(true);
+    setError('');
+    
     try {
-      const formData = new FormData();
-      formData.append('userId', user?.id || '');
-      formData.append('userRole', user?.role || 'CUSTOMER');
+      const userId = user?.id || '';
+      const userRole = user?.role || 'CUSTOMER';
+      const token = localStorage.getItem('token');
       
-      if (aadhaarMethod === 0) {
-        formData.append('documentType', 'AADHAAR');
-        if (aadhaarFront) formData.append('documentFront', aadhaarFront);
-        if (aadhaarBack) formData.append('documentBack', aadhaarBack);
-      } else {
-        formData.append('documentType', 'AADHAAR_OTP');
-        formData.append('documentNumber', aadhaarNumber);
+      // Submit Aadhaar to separate collection
+      if (aadhaarFront && aadhaarBack) {
+        const aadhaarFormData = new FormData();
+        aadhaarFormData.append('userId', userId);
+        aadhaarFormData.append('userRole', userRole);
+        aadhaarFormData.append('aadhaarFront', aadhaarFront);
+        aadhaarFormData.append('aadhaarBack', aadhaarBack);
+        aadhaarFormData.append('aadhaarNumber', '');
+        aadhaarFormData.append('isOtpVerified', 'false');
+        
+        const aadhaarResponse = await fetch('http://localhost:8080/api/kyc/aadhaar/submit', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: aadhaarFormData,
+        });
+        
+        const aadhaarData = await aadhaarResponse.json();
+        if (!aadhaarData.success) {
+          throw new Error(aadhaarData.message || 'Aadhaar submission failed');
+        }
       }
       
-      if (panCard) formData.append('panCard', panCard);
-      formData.append('panNumber', panNumber);
+      // Submit PAN to separate collection
+      if (panCard && panNumber) {
+        const panFormData = new FormData();
+        panFormData.append('userId', userId);
+        panFormData.append('userRole', userRole);
+        panFormData.append('panImage', panCard);
+        panFormData.append('panNumber', panNumber);
+        
+        const panResponse = await fetch('http://localhost:8080/api/kyc/pan/submit', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: panFormData,
+        });
+        
+        const panData = await panResponse.json();
+        if (!panData.success) {
+          throw new Error(panData.message || 'PAN submission failed');
+        }
+      }
       
-      if (selfie) formData.append('selfie', selfie);
+      // Submit Selfie to separate collection
+      if (selfie) {
+        const selfieFormData = new FormData();
+        selfieFormData.append('userId', userId);
+        selfieFormData.append('userRole', userRole);
+        selfieFormData.append('selfieImage', selfie);
+        selfieFormData.append('captureMethod', selfieMethod === 0 ? 'UPLOAD' : 'LIVE_CAPTURE');
       
-      const response = await fetch('http://localhost:8080/api/kyc/submit', {
+        const selfieResponse = await fetch('http://localhost:8080/api/kyc/selfie/submit', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
         },
-        body: formData,
+          body: selfieFormData,
       });
       
-      const data = await response.json();
+        const selfieData = await selfieResponse.json();
+        if (!selfieData.success) {
+          throw new Error(selfieData.message || 'Selfie submission failed');
+        }
+      }
       
-      if (data.success) {
+      // All submissions successful
         setSuccess(true);
         setError('');
         setTimeout(() => {
           navigate('/');
         }, 3000);
-      } else {
-        setError(data.message || 'KYC submission failed');
-      }
+      
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
@@ -284,10 +429,33 @@ const KYCVerificationPage: React.FC = () => {
       case 0: // Aadhaar Verification
         return (
           <Box>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
+            <Box sx={{ mb: 4, pb: 2, borderBottom: '2px solid #f0f0f0' }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '1.75rem',
+                  color: '#1a1a1a',
+                  mb: 0.5,
+                }}
+              >
               Aadhaar Verification
             </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#666',
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '0.9rem',
+                }}
+              >
+                Upload both sides of your Aadhaar card for verification
+              </Typography>
+            </Box>
             
+            {/* Aadhaar OTP Feature - Disabled for now. Enable when OTP feature is ready */}
+            {/* 
             <Tabs
               value={aadhaarMethod}
               onChange={(_, newValue) => setAadhaarMethod(newValue)}
@@ -296,34 +464,176 @@ const KYCVerificationPage: React.FC = () => {
               <Tab label="Upload Aadhaar Scan" icon={<CloudUpload />} />
               <Tab label="Verify with OTP" icon={<Fingerprint />} />
             </Tabs>
+            */}
             
-            <TabPanel value={aadhaarMethod} index={0}>
+            {/* Manual Upload Section - Always visible when OTP is disabled */}
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <Paper
+                    elevation={0}
                     sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      border: '2px dashed #667eea',
+                      p: 0,
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      transition: 'all 0.3s ease',
                       cursor: 'pointer',
-                      '&:hover': { bgcolor: 'rgba(102,126,234,0.05)' },
+                      '&:hover': { 
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        borderColor: '#667eea',
+                      },
                     }}
                     component="label"
                   >
                     {aadhaarFrontPreview ? (
-                      <img src={aadhaarFrontPreview} alt="Aadhaar Front" style={{ maxWidth: '100%', maxHeight: 200 }} />
+                      <Box sx={{ 
+                        position: 'relative', 
+                        bgcolor: '#f5f5f5', 
+                        minHeight: 300, 
+                        width: '100%',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        p: 2,
+                      }}>
+                        <img 
+                          src={aadhaarFrontPreview} 
+                          alt="Aadhaar Front" 
+                          style={{ 
+                            maxWidth: '100%',
+                            maxHeight: '400px',
+                            width: 'auto',
+                            height: 'auto',
+                            display: 'block',
+                            objectFit: 'contain',
+                            borderRadius: 4,
+                          }} 
+                        />
+                        <Button
+                          size="small"
+                          variant="contained"
+                          sx={{ 
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            bgcolor: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            fontFamily: '"Poppins", sans-serif',
+                            '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' },
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAadhaarFront(null);
+                            setAadhaarFrontPreview('');
+                          }}
+                        >
+                          Change
+                        </Button>
+                      </Box>
                     ) : (
-                      <>
-                        <CloudUpload sx={{ fontSize: 60, color: '#667eea', mb: 2 }} />
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      <Box
+                        sx={{
+                          p: 5,
+                          textAlign: 'center',
+                          bgcolor: '#fafafa',
+                        }}
+                      >
+                        {/* Aadhaar Logo */}
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            bgcolor: '#FF6B35',
+                            px: 2.5,
+                            py: 1,
+                            borderRadius: 1.5,
+                            mb: 3,
+                            boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontFamily: '"Poppins", sans-serif',
+                              fontWeight: 800,
+                              fontSize: '1.2rem',
+                              color: 'white',
+                              letterSpacing: '1.5px',
+                            }}
+                          >
+                            आधार
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontFamily: '"Poppins", sans-serif',
+                              fontWeight: 700,
+                              fontSize: '1rem',
+                              color: 'white',
+                              letterSpacing: '1px',
+                            }}
+                          >
+                            AADHAAR
+                          </Typography>
+                        </Box>
+                        
+                        {/* Upload Icon */}
+                        <Box sx={{ mb: 2 }}>
+                          <Image 
+                            sx={{ 
+                              fontSize: 56, 
+                              color: '#667eea',
+                            }} 
+                          />
+                        </Box>
+                        
+                        <Typography 
+                          sx={{ 
+                            fontWeight: 600, 
+                            mb: 0.5, 
+                            color: '#1a1a1a',
+                            fontFamily: '"Poppins", sans-serif',
+                            fontSize: '1.1rem',
+                          }}
+                        >
                           Upload Aadhaar Front
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Click to browse
+                        <Typography 
+                          sx={{ 
+                            color: '#666',
+                            fontFamily: '"Poppins", sans-serif',
+                            fontSize: '0.875rem',
+                            mb: 2.5,
+                          }}
+                        >
+                          JPG, PNG or PDF (Max 5MB)
                         </Typography>
-                      </>
+                        <Button
+                          variant="outlined"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            aadhaarFrontInputRef.current?.click();
+                          }}
+                          sx={{
+                            borderColor: '#667eea',
+                            color: '#667eea',
+                            fontFamily: '"Poppins", sans-serif',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 3,
+                            '&:hover': {
+                              borderColor: '#764ba2',
+                              bgcolor: 'rgba(102,126,234,0.05)',
+                            },
+                          }}
+                        >
+                          Choose File
+                        </Button>
+                      </Box>
                     )}
                     <input
+                      ref={aadhaarFrontInputRef}
                       type="file"
                       hidden
                       accept="image/*"
@@ -334,29 +644,170 @@ const KYCVerificationPage: React.FC = () => {
                 
                 <Grid item xs={12} md={6}>
                   <Paper
+                    elevation={0}
                     sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      border: '2px dashed #667eea',
+                      p: 0,
+                      border: '1px solid #e0e0e0',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      transition: 'all 0.3s ease',
                       cursor: 'pointer',
-                      '&:hover': { bgcolor: 'rgba(102,126,234,0.05)' },
+                      '&:hover': { 
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        borderColor: '#667eea',
+                      },
                     }}
                     component="label"
                   >
                     {aadhaarBackPreview ? (
-                      <img src={aadhaarBackPreview} alt="Aadhaar Back" style={{ maxWidth: '100%', maxHeight: 200 }} />
+                      <Box sx={{ 
+                        position: 'relative', 
+                        bgcolor: '#f5f5f5', 
+                        minHeight: 300, 
+                        width: '100%',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        p: 2,
+                      }}>
+                        <img 
+                          src={aadhaarBackPreview} 
+                          alt="Aadhaar Back" 
+                          style={{ 
+                            maxWidth: '100%',
+                            maxHeight: '400px',
+                            width: 'auto',
+                            height: 'auto',
+                            display: 'block',
+                            objectFit: 'contain',
+                            borderRadius: 4,
+                          }} 
+                        />
+                        <Button
+                          size="small"
+                          variant="contained"
+                          sx={{ 
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            bgcolor: 'rgba(0,0,0,0.7)',
+                            color: 'white',
+                            fontFamily: '"Poppins", sans-serif',
+                            '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' },
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAadhaarBack(null);
+                            setAadhaarBackPreview('');
+                          }}
+                        >
+                          Change
+                        </Button>
+                      </Box>
                     ) : (
-                      <>
-                        <CloudUpload sx={{ fontSize: 60, color: '#667eea', mb: 2 }} />
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      <Box
+                        sx={{
+                          p: 5,
+                          textAlign: 'center',
+                          bgcolor: '#fafafa',
+                        }}
+                      >
+                        {/* Aadhaar Logo */}
+                        <Box
+                          sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            bgcolor: '#FF6B35',
+                            px: 2.5,
+                            py: 1,
+                            borderRadius: 1.5,
+                            mb: 3,
+                            boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontFamily: '"Poppins", sans-serif',
+                              fontWeight: 800,
+                              fontSize: '1.2rem',
+                              color: 'white',
+                              letterSpacing: '1.5px',
+                            }}
+                          >
+                            आधार
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontFamily: '"Poppins", sans-serif',
+                              fontWeight: 700,
+                              fontSize: '1rem',
+                              color: 'white',
+                              letterSpacing: '1px',
+                            }}
+                          >
+                            AADHAAR
+                          </Typography>
+                        </Box>
+                        
+                        {/* Upload Icon */}
+                        <Box sx={{ mb: 2 }}>
+                          <Image 
+                            sx={{ 
+                              fontSize: 56, 
+                              color: '#667eea',
+                            }} 
+                          />
+                        </Box>
+                        
+                        <Typography 
+                          sx={{ 
+                            fontWeight: 600, 
+                            mb: 0.5, 
+                            color: '#1a1a1a',
+                            fontFamily: '"Poppins", sans-serif',
+                            fontSize: '1.1rem',
+                          }}
+                        >
                           Upload Aadhaar Back
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Click to browse
+                        <Typography 
+                          sx={{ 
+                            color: '#666',
+                            fontFamily: '"Poppins", sans-serif',
+                            fontSize: '0.875rem',
+                            mb: 2.5,
+                          }}
+                        >
+                          JPG, PNG or PDF (Max 5MB)
                         </Typography>
-                      </>
+                        <Button
+                          variant="outlined"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            aadhaarBackInputRef.current?.click();
+                          }}
+                          sx={{
+                            borderColor: '#667eea',
+                            color: '#667eea',
+                            fontFamily: '"Poppins", sans-serif',
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            px: 3,
+                            '&:hover': {
+                              borderColor: '#764ba2',
+                              bgcolor: 'rgba(102,126,234,0.05)',
+                            },
+                          }}
+                        >
+                          Choose File
+                        </Button>
+                      </Box>
                     )}
                     <input
+                      ref={aadhaarBackInputRef}
                       type="file"
                       hidden
                       accept="image/*"
@@ -365,8 +816,9 @@ const KYCVerificationPage: React.FC = () => {
                   </Paper>
                 </Grid>
               </Grid>
-            </TabPanel>
             
+            {/* Aadhaar OTP TabPanel - Disabled for now */}
+            {/* 
             <TabPanel value={aadhaarMethod} index={1}>
               <Box sx={{ maxWidth: 500, mx: 'auto' }}>
                 <TextField
@@ -430,46 +882,175 @@ const KYCVerificationPage: React.FC = () => {
                 )}
               </Box>
             </TabPanel>
+            */}
           </Box>
         );
         
       case 1: // PAN Card
         return (
           <Box>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
+            <Box sx={{ mb: 4, pb: 2, borderBottom: '2px solid #f0f0f0' }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '1.75rem',
+                  color: '#1a1a1a',
+                  mb: 0.5,
+                }}
+              >
               PAN Card Details
             </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#666',
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '0.9rem',
+                }}
+              >
+                Upload your PAN card and enter the PAN number
+              </Typography>
+            </Box>
             
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Paper
+                  elevation={0}
                   sx={{
-                    p: 3,
-                    textAlign: 'center',
-                    border: '2px dashed #667eea',
+                    p: 0,
+                    border: '1px solid #e0e0e0',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease',
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: 'rgba(102,126,234,0.05)' },
+                    position: 'relative',
+                    '&:hover': { 
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      borderColor: '#667eea',
+                    },
                   }}
-                  component="label"
+                  onClick={(e) => {
+                    // If clicking on the Paper itself (not on button), trigger file input
+                    if ((e.target as HTMLElement).tagName !== 'BUTTON' && !panCardPreview) {
+                      panInputRef.current?.click();
+                    }
+                  }}
                 >
                   {panCardPreview ? (
-                    <img src={panCardPreview} alt="PAN Card" style={{ maxWidth: '100%', maxHeight: 250 }} />
+                    <Box sx={{ 
+                      position: 'relative', 
+                      bgcolor: '#f5f5f5', 
+                      minHeight: 300, 
+                      width: '100%',
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      p: 2,
+                    }}>
+                      <img 
+                        src={panCardPreview} 
+                        alt="PAN Card" 
+                        style={{ 
+                          maxWidth: '100%',
+                          maxHeight: '400px',
+                          width: 'auto',
+                          height: 'auto',
+                          display: 'block',
+                          objectFit: 'contain',
+                          borderRadius: 4,
+                        }} 
+                      />
+                      <Button
+                        size="small"
+                        variant="contained"
+                        sx={{ 
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          bgcolor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          fontFamily: '"Poppins", sans-serif',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.9)' },
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setPanCard(null);
+                          setPanCardPreview('');
+                        }}
+                      >
+                        Change
+                      </Button>
+                    </Box>
                   ) : (
-                    <>
-                      <CreditCard sx={{ fontSize: 80, color: '#667eea', mb: 2 }} />
-                      <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                    <Box
+                      sx={{
+                        p: 5,
+                        textAlign: 'center',
+                        bgcolor: '#fafafa',
+                      }}
+                    >
+                      <CreditCard sx={{ fontSize: 48, color: '#667eea', mb: 2, display: 'block' }} />
+                      <Typography 
+                        sx={{ 
+                          fontWeight: 600, 
+                          mb: 0.5, 
+                          color: '#1a1a1a',
+                          fontFamily: '"Poppins", sans-serif',
+                          fontSize: '1.1rem',
+                        }}
+                      >
                         Upload PAN Card
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Click to browse
+                      <Typography 
+                        sx={{ 
+                          color: '#666',
+                          fontFamily: '"Poppins", sans-serif',
+                          fontSize: '0.875rem',
+                          mb: 2.5,
+                        }}
+                      >
+                        JPG, PNG or PDF (Max 5MB)
                       </Typography>
-                    </>
+                      <Button
+                        component="span"
+                        variant="outlined"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          panInputRef.current?.click();
+                        }}
+                        sx={{
+                          borderColor: '#667eea',
+                          color: '#667eea',
+                          fontFamily: '"Poppins", sans-serif',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          px: 3,
+                          '&:hover': {
+                            borderColor: '#764ba2',
+                            bgcolor: 'rgba(102,126,234,0.05)',
+                          },
+                        }}
+                      >
+                        Choose File
+                      </Button>
+                    </Box>
                   )}
                   <input
+                    id="pan-card-input"
+                    ref={panInputRef}
                     type="file"
                     hidden
                     accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], setPanCard, setPanCardPreview)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleFileUpload(file, setPanCard, setPanCardPreview);
+                      }
+                    }}
                   />
                 </Paper>
               </Grid>
@@ -482,9 +1063,26 @@ const KYCVerificationPage: React.FC = () => {
                   onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
                   placeholder="ABCDE1234F"
                   inputProps={{ maxLength: 10 }}
-                  sx={{ mb: 2 }}
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      fontFamily: '"Poppins", sans-serif',
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontFamily: '"Poppins", sans-serif',
+                    },
+                  }}
                 />
-                <Alert severity="info" sx={{ mt: 2 }}>
+                <Alert 
+                  severity="info" 
+                  sx={{ 
+                    mt: 2,
+                    fontFamily: '"Poppins", sans-serif',
+                    '& .MuiAlert-message': {
+                      fontFamily: '"Poppins", sans-serif',
+                    },
+                  }}
+                >
                   Please ensure PAN number matches the uploaded card
                 </Alert>
               </Grid>
@@ -495,57 +1093,291 @@ const KYCVerificationPage: React.FC = () => {
       case 2: // Selfie
         return (
           <Box>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
+            <Box sx={{ mb: 4, pb: 2, borderBottom: '2px solid #f0f0f0' }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 700,
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '1.75rem',
+                  color: '#1a1a1a',
+                  mb: 0.5,
+                }}
+              >
               Selfie Verification
             </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#666',
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '0.9rem',
+                }}
+              >
+                Upload a clear selfie or capture one using your camera
+              </Typography>
+            </Box>
             
             <Tabs
               value={selfieMethod}
               onChange={(_, newValue) => setSelfieMethod(newValue)}
-              sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+              sx={{ 
+                mb: 5, 
+                borderBottom: 2, 
+                borderColor: '#f0f0f0',
+                '& .MuiTab-root': {
+                  fontFamily: '"Poppins", sans-serif',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  minHeight: 64,
+                  px: 4,
+                  '&.Mui-selected': {
+                    color: '#667eea',
+                    fontWeight: 700,
+                  },
+                },
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  borderRadius: '3px 3px 0 0',
+                  bgcolor: '#667eea',
+                },
+              }}
             >
-              <Tab label="Upload Photo" icon={<CloudUpload />} />
-              <Tab label="Live Capture" icon={<CameraAlt />} />
+              <Tab label="Upload Photo" icon={<CloudUpload />} iconPosition="start" />
+              <Tab label="Live Capture" icon={<CameraAlt />} iconPosition="start" />
             </Tabs>
             
             <TabPanel value={selfieMethod} index={0}>
+              <Box sx={{ maxWidth: 500, mx: 'auto' }}>
               <Paper
+                  elevation={0}
                 sx={{
-                  p: 4,
-                  textAlign: 'center',
-                  border: '2px dashed #667eea',
+                    p: 0,
+                    border: '2px solid #e8e8e8',
+                    borderRadius: 4,
                   cursor: 'pointer',
-                  maxWidth: 400,
-                  mx: 'auto',
-                  '&:hover': { bgcolor: 'rgba(102,126,234,0.05)' },
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease',
+                    bgcolor: 'white',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    '&:hover': { 
+                      boxShadow: '0 8px 24px rgba(102,126,234,0.15)',
+                      borderColor: '#667eea',
+                      transform: 'translateY(-4px)',
+                    },
                 }}
                 component="label"
               >
                 {selfiePreview ? (
-                  <img src={selfiePreview} alt="Selfie" style={{ maxWidth: '100%', borderRadius: 8 }} />
+                  <Box sx={{ 
+                    position: 'relative', 
+                    bgcolor: '#f8f9fa', 
+                    minHeight: 400, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    p: 3,
+                  }}>
+                    <img 
+                      src={selfiePreview} 
+                      alt="Selfie" 
+                      style={{ 
+                        maxWidth: '100%',
+                        maxHeight: '450px',
+                        width: 'auto',
+                        height: 'auto',
+                        display: 'block',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }} 
+                    />
+                    <Button
+                      size="medium"
+                      variant="contained"
+                      sx={{ 
+                        position: 'absolute',
+                        top: 16,
+                        right: 16,
+                        bgcolor: 'rgba(0,0,0,0.75)',
+                        color: 'white',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        px: 3,
+                        borderRadius: 2,
+                        '&:hover': { 
+                          bgcolor: 'rgba(0,0,0,0.9)',
+                          transform: 'scale(1.05)',
+                        },
+                        transition: 'all 0.2s ease',
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelfie(null);
+                        setSelfiePreview('');
+                      }}
+                    >
+                      Change Photo
+                    </Button>
+                  </Box>
                 ) : (
-                  <>
-                    <PhotoCamera sx={{ fontSize: 100, color: '#667eea', mb: 2 }} />
-                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                  <Box
+                    sx={{
+                      p: 6,
+                      textAlign: 'center',
+                      bgcolor: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
+                      background: '#fafbfc',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: '50%',
+                        bgcolor: '#667eea',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 3,
+                        boxShadow: '0 4px 16px rgba(102,126,234,0.3)',
+                      }}
+                    >
+                      <Person sx={{ fontSize: 56, color: 'white' }} />
+                    </Box>
+                    <Typography 
+                      sx={{ 
+                        fontWeight: 700, 
+                        mb: 1, 
+                        color: '#1a1a1a',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontSize: '1.25rem',
+                      }}
+                    >
                       Upload Your Selfie
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Click to browse
+                    <Typography 
+                      sx={{ 
+                        color: '#666',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontSize: '0.95rem',
+                        mb: 3.5,
+                        maxWidth: 300,
+                        mx: 'auto',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Upload a clear face photo. Make sure your face is clearly visible and well-lit.
                     </Typography>
-                  </>
+                    <Button
+                      component="span"
+                      variant="contained"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        selfieInputRef.current?.click();
+                      }}
+                      sx={{
+                        bgcolor: '#667eea',
+                        color: 'white',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        px: 5,
+                        py: 1.5,
+                        borderRadius: 2,
+                        fontSize: '1rem',
+                        boxShadow: '0 4px 14px rgba(102,126,234,0.35)',
+                        '&:hover': {
+                          bgcolor: '#5568d3',
+                          boxShadow: '0 6px 20px rgba(102,126,234,0.45)',
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      Choose File
+                    </Button>
+                    <Typography 
+                      sx={{ 
+                        color: '#999',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontSize: '0.8rem',
+                        mt: 2,
+                      }}
+                    >
+                      JPG, PNG or PDF (Max 5MB)
+                    </Typography>
+                  </Box>
                 )}
                 <input
+                  ref={selfieInputRef}
                   type="file"
                   hidden
                   accept="image/*"
                   onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], setSelfie, setSelfiePreview)}
                 />
               </Paper>
+              </Box>
             </TabPanel>
             
             <TabPanel value={selfieMethod} index={1}>
-              <Box sx={{ maxWidth: 500, mx: 'auto', textAlign: 'center' }}>
+              <Box sx={{ maxWidth: 550, mx: 'auto' }}>
                 {!cameraActive && !selfiePreview && (
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 6,
+                      textAlign: 'center',
+                      border: '2px solid #e8e8e8',
+                      borderRadius: 4,
+                      bgcolor: '#fafbfc',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: '50%',
+                        bgcolor: '#667eea',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mx: 'auto',
+                        mb: 3,
+                        boxShadow: '0 4px 16px rgba(102,126,234,0.3)',
+                      }}
+                    >
+                      <CameraAlt sx={{ fontSize: 48, color: 'white' }} />
+                    </Box>
+                    <Typography 
+                      sx={{ 
+                        fontWeight: 700, 
+                        mb: 1, 
+                        color: '#1a1a1a',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontSize: '1.25rem',
+                      }}
+                    >
+                      Live Camera Capture
+                    </Typography>
+                    <Typography 
+                      sx={{ 
+                        color: '#666',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontSize: '0.95rem',
+                        mb: 4,
+                        maxWidth: 350,
+                        mx: 'auto',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Click the button below to start your camera and capture a live selfie
+                    </Typography>
                   <Button
                     variant="contained"
                     size="large"
@@ -553,45 +1385,99 @@ const KYCVerificationPage: React.FC = () => {
                     startIcon={<CameraAlt />}
                     sx={{
                       bgcolor: '#667eea',
-                      '&:hover': { bgcolor: '#764ba2' },
+                        color: 'white',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 700,
+                        textTransform: 'none',
                       py: 2,
-                      px: 4,
+                        px: 6,
+                        borderRadius: 2,
+                        fontSize: '1.05rem',
+                        boxShadow: '0 4px 14px rgba(102,126,234,0.35)',
+                        '&:hover': { 
+                          bgcolor: '#5568d3',
+                          boxShadow: '0 6px 20px rgba(102,126,234,0.45)',
+                          transform: 'translateY(-2px)',
+                        },
+                        transition: 'all 0.3s ease',
                     }}
                   >
                     Start Camera
                   </Button>
+                  </Paper>
                 )}
                 
                 {cameraActive && (
                   <Box>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        border: '2px solid #e8e8e8',
+                        borderRadius: 4,
+                        bgcolor: 'white',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                        overflow: 'hidden',
+                      }}
+                    >
                     <video
                       ref={videoRef}
                       autoPlay
                       style={{
                         width: '100%',
-                        maxWidth: 400,
+                          maxWidth: '100%',
                         borderRadius: 8,
-                        border: '3px solid #667eea',
+                          display: 'block',
                       }}
                     />
-                    <Box sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    </Paper>
+                    <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
                       <Button
                         variant="contained"
                         onClick={captureSelfie}
                         startIcon={<PhotoCamera />}
+                        size="large"
                         sx={{
-                          bgcolor: '#667eea',
-                          '&:hover': { bgcolor: '#764ba2' },
+                          bgcolor: '#4CAF50',
+                          color: 'white',
+                          fontFamily: '"Poppins", sans-serif',
+                          fontWeight: 700,
+                          textTransform: 'none',
+                          px: 5,
+                          py: 1.5,
+                          borderRadius: 2,
+                          fontSize: '1rem',
+                          boxShadow: '0 4px 14px rgba(76,175,80,0.35)',
+                          '&:hover': { 
+                            bgcolor: '#45a049',
+                            boxShadow: '0 6px 20px rgba(76,175,80,0.45)',
+                            transform: 'translateY(-2px)',
+                          },
+                          transition: 'all 0.3s ease',
                         }}
                       >
-                        Capture
+                        Capture Photo
                       </Button>
                       <Button
                         variant="outlined"
                         onClick={stopCamera}
+                        size="large"
                         sx={{
-                          borderColor: '#667eea',
-                          color: '#667eea',
+                          borderColor: '#dc3545',
+                          color: '#dc3545',
+                          fontFamily: '"Poppins", sans-serif',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                          px: 5,
+                          py: 1.5,
+                          borderRadius: 2,
+                          fontSize: '1rem',
+                          '&:hover': {
+                            borderColor: '#c82333',
+                            bgcolor: 'rgba(220,53,69,0.05)',
+                            transform: 'translateY(-2px)',
+                          },
+                          transition: 'all 0.3s ease',
                         }}
                       >
                         Cancel
@@ -601,15 +1487,39 @@ const KYCVerificationPage: React.FC = () => {
                 )}
                 
                 {selfiePreview && !cameraActive && (
-                  <Box>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      mt: 4,
+                      p: 3,
+                      border: '2px solid #4CAF50',
+                      borderRadius: 4,
+                      bgcolor: 'white',
+                      boxShadow: '0 4px 16px rgba(76,175,80,0.2)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 600,
+                        color: '#4CAF50',
+                        mb: 2,
+                        fontSize: '1rem',
+                      }}
+                    >
+                      ✓ Photo Captured Successfully
+                    </Typography>
                     <img
                       src={selfiePreview}
                       alt="Captured Selfie"
                       style={{
                         width: '100%',
-                        maxWidth: 400,
+                        maxWidth: 450,
                         borderRadius: 8,
-                        border: '3px solid #4CAF50',
+                        display: 'block',
+                        margin: '0 auto',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       }}
                     />
                     <Button
@@ -618,11 +1528,25 @@ const KYCVerificationPage: React.FC = () => {
                         setSelfie(null);
                         setSelfiePreview('');
                       }}
-                      sx={{ mt: 2 }}
+                      sx={{
+                        mt: 3,
+                        borderColor: '#667eea',
+                        color: '#667eea',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        '&:hover': {
+                          borderColor: '#5568d3',
+                          bgcolor: 'rgba(102,126,234,0.05)',
+                        },
+                      }}
                     >
-                      Retake
+                      Retake Photo
                     </Button>
-                  </Box>
+                  </Paper>
                 )}
                 
                 <canvas ref={canvasRef} style={{ display: 'none' }} />
@@ -634,7 +1558,17 @@ const KYCVerificationPage: React.FC = () => {
       case 3: // Review
         return (
           <Box>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, textAlign: 'center' }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 4, 
+                fontWeight: 700, 
+                textAlign: 'center',
+                fontFamily: '"Poppins", sans-serif',
+                fontSize: '1.5rem',
+                color: '#1a1a1a',
+              }}
+            >
               Review Your Documents
             </Typography>
             
@@ -681,7 +1615,16 @@ const KYCVerificationPage: React.FC = () => {
               </Grid>
             </Grid>
             
-            <Alert severity="warning" sx={{ mt: 3 }}>
+            <Alert 
+              severity="warning" 
+              sx={{ 
+                mt: 4,
+                fontFamily: '"Poppins", sans-serif',
+                '& .MuiAlert-message': {
+                  fontFamily: '"Poppins", sans-serif',
+                },
+              }}
+            >
               Please ensure all documents are clear and readable. Your KYC will be reviewed by our team within 24-48 hours.
             </Alert>
           </Box>
@@ -700,23 +1643,603 @@ const KYCVerificationPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #f0f4f8 100%)',
         }}
       >
         <Container maxWidth="sm">
-          <Paper sx={{ p: 5, textAlign: 'center' }}>
-            <CheckCircle sx={{ fontSize: 100, color: '#4CAF50', mb: 3 }} />
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 6, 
+              textAlign: 'center',
+              borderRadius: 4,
+              border: '1px solid #e8e8e8',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              bgcolor: 'white',
+            }}
+          >
+            <CheckCircle sx={{ fontSize: 120, color: '#4CAF50', mb: 4 }} />
+            <Typography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 800, 
+                mb: 2,
+                fontFamily: '"Poppins", sans-serif',
+                color: '#1a1a1a',
+                fontSize: '2rem',
+              }}
+            >
               KYC Submitted Successfully!
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                mb: 4,
+                fontFamily: '"Poppins", sans-serif',
+                color: '#666',
+                fontSize: '1.05rem',
+                maxWidth: 500,
+                mx: 'auto',
+              }}
+            >
               Your documents are under review. You'll be notified once verified.
             </Typography>
-            <CircularProgress />
-            <Typography variant="caption" sx={{ display: 'block', mt: 2 }}>
+            <CircularProgress size={28} sx={{ color: '#667eea', mb: 2 }} />
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontFamily: '"Poppins", sans-serif',
+                color: '#999',
+                fontSize: '0.9rem',
+              }}
+            >
               Redirecting to home...
             </Typography>
           </Paper>
+        </Container>
+      </Box>
+    );
+  }
+  
+  // Render Status View Component
+  const renderStatusView = () => {
+    if (!kycStatus) return null;
+    
+    const getStatusColor = (status?: string) => {
+      switch (status) {
+        case 'VERIFIED': return '#4CAF50';
+        case 'UNDER_REVIEW': return '#FF9800';
+        case 'PENDING': return '#2196F3';
+        case 'REJECTED': return '#f44336';
+        default: return '#9E9E9E';
+      }
+    };
+    
+    const getStatusIcon = (status?: string) => {
+      switch (status) {
+        case 'VERIFIED': return <VerifiedUser />;
+        case 'UNDER_REVIEW': return <Pending />;
+        case 'PENDING': return <Pending />;
+        case 'REJECTED': return <Cancel />;
+        default: return <Pending />;
+      }
+    };
+    
+    const getStatusText = (status?: string) => {
+      switch (status) {
+        case 'VERIFIED': return 'Verified';
+        case 'UNDER_REVIEW': return 'Under Review';
+        case 'PENDING': return 'Pending';
+        case 'REJECTED': return 'Rejected';
+        default: return 'Not Submitted';
+      }
+    };
+    
+    return (
+      <Box>
+        <Box sx={{ textAlign: 'center', mb: 5, pb: 4, borderBottom: '2px solid #f0f0f0' }}>
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 3,
+              boxShadow: '0 8px 24px rgba(102,126,234,0.3)',
+            }}
+          >
+            <Security sx={{ fontSize: 40, color: 'white' }} />
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, fontFamily: '"Poppins", sans-serif', color: '#1a1a1a', mb: 1.5, lineHeight: 1.2 }}>
+            KYC Status
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#666', fontFamily: '"Poppins", sans-serif', fontSize: '1rem', lineHeight: 1.6, maxWidth: 600, mx: 'auto', mb: 3 }}>
+            View your document verification status and track the progress of your identity verification
+          </Typography>
+          {kycStatus.status === 'REJECTED' && (
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="contained"
+                startIcon={<Refresh />}
+                onClick={() => {
+                  setViewMode('upload');
+                  fetchKYCStatus();
+                }}
+                sx={{ 
+                  fontFamily: '"Poppins", sans-serif', 
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 5,
+                  py: 1.5,
+                  borderRadius: 2,
+                  bgcolor: '#dc3545',
+                  boxShadow: '0 4px 12px rgba(220,53,69,0.3)',
+                  '&:hover': {
+                    bgcolor: '#c82333',
+                    boxShadow: '0 6px 16px rgba(220,53,69,0.4)',
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                Re-upload Documents
+              </Button>
+            </Box>
+          )}
+        </Box>
+        
+        {/* Overall Status */}
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 5,
+            p: 3,
+            borderRadius: 3,
+            border: '2px solid',
+            borderColor: 
+              kycStatus.status === 'VERIFIED' ? '#4CAF50' :
+              kycStatus.status === 'REJECTED' ? '#f44336' :
+              kycStatus.status === 'UNDER_REVIEW' ? '#FF9800' : '#2196F3',
+            bgcolor: 
+              kycStatus.status === 'VERIFIED' ? 'rgba(76,175,80,0.05)' :
+              kycStatus.status === 'REJECTED' ? 'rgba(244,67,54,0.05)' :
+              kycStatus.status === 'UNDER_REVIEW' ? 'rgba(255,152,0,0.05)' : 'rgba(33,150,243,0.05)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                bgcolor: getStatusColor(kycStatus.status),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                mr: 2,
+                boxShadow: `0 4px 12px ${getStatusColor(kycStatus.status)}40`,
+              }}
+            >
+              {getStatusIcon(kycStatus.status)}
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', color: '#1a1a1a', mb: 0.5 }}>
+                Overall Status: {kycStatus.status ? getStatusText(kycStatus.status) : 'Not Submitted'}
+              </Typography>
+              {kycStatus.submittedAt && (
+                <Typography variant="body2" sx={{ color: '#666', fontFamily: '"Poppins", sans-serif' }}>
+                  Submitted on: {new Date(kycStatus.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+          {kycStatus.status === 'REJECTED' && kycStatus.rejectionReason && (
+            <Alert severity="error" sx={{ mt: 2, borderRadius: 2, fontFamily: '"Poppins", sans-serif' }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Rejection Reason:
+              </Typography>
+              <Typography variant="body2">
+                {kycStatus.rejectionReason}
+              </Typography>
+            </Alert>
+          )}
+          {kycStatus.status === 'VERIFIED' && kycStatus.verifiedAt && (
+            <Alert severity="success" sx={{ mt: 2, borderRadius: 2, fontFamily: '"Poppins", sans-serif' }}>
+              <Typography variant="body2">
+                ✓ Verified on: {new Date(kycStatus.verifiedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </Typography>
+            </Alert>
+          )}
+        </Paper>
+        
+        {/* Document Status Cards */}
+        <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', mb: 3, color: '#1a1a1a' }}>
+          Document Status
+        </Typography>
+        <Grid container spacing={3}>
+          {/* Aadhaar Status */}
+          <Grid item xs={12} md={4}>
+            <Card 
+              elevation={0}
+              sx={{ 
+                borderRadius: 4, 
+                border: '2px solid', 
+                borderColor: getStatusColor(kycStatus.aadhaarStatus),
+                bgcolor: 'white',
+                boxShadow: `0 4px 20px ${getStatusColor(kycStatus.aadhaarStatus)}20`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 24px ${getStatusColor(kycStatus.aadhaarStatus)}30`,
+                },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <Box sx={{ 
+                    width: 56, 
+                    height: 56, 
+                    borderRadius: '50%', 
+                    bgcolor: getStatusColor(kycStatus.aadhaarStatus),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    mr: 2,
+                    boxShadow: `0 4px 12px ${getStatusColor(kycStatus.aadhaarStatus)}40`,
+                  }}>
+                    <Image sx={{ fontSize: 32 }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', color: '#1a1a1a' }}>
+                    Aadhaar
+                  </Typography>
+                </Box>
+                <Chip
+                  icon={getStatusIcon(kycStatus.aadhaarStatus)}
+                  label={getStatusText(kycStatus.aadhaarStatus)}
+                  sx={{
+                    bgcolor: getStatusColor(kycStatus.aadhaarStatus),
+                    color: 'white',
+                    fontWeight: 700,
+                    fontFamily: '"Poppins", sans-serif',
+                    mb: 2,
+                    fontSize: '0.875rem',
+                    height: 32,
+                    '& .MuiChip-icon': {
+                      color: 'white',
+                    },
+                  }}
+                />
+                {kycStatus.aadhaarSubmitted && (kycStatus.aadhaarFrontUrl || kycStatus.aadhaarBackUrl) ? (
+                  <Box sx={{ mt: 2, flexGrow: 1 }}>
+                    {kycStatus.aadhaarFrontUrl && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" sx={{ display: 'block', mb: 1, fontWeight: 700, color: '#1a1a1a', fontFamily: '"Poppins", sans-serif', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Front Side
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: '1px solid #e8e8e8',
+                            bgcolor: '#fafafa',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: 120,
+                          }}
+                        >
+                          <img 
+                            src={`http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(kycStatus.aadhaarFrontUrl)}`}
+                            alt="Aadhaar Front"
+                            style={{
+                              width: '100%',
+                              maxHeight: 120,
+                              objectFit: 'contain',
+                              borderRadius: 6,
+                            }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </Paper>
+                      </Box>
+                    )}
+                    {kycStatus.aadhaarBackUrl && (
+                      <Box>
+                        <Typography variant="caption" sx={{ display: 'block', mb: 1, fontWeight: 700, color: '#1a1a1a', fontFamily: '"Poppins", sans-serif', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Back Side
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: 2,
+                            border: '1px solid #e8e8e8',
+                            bgcolor: '#fafafa',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: 120,
+                          }}
+                        >
+                          <img 
+                            src={`http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(kycStatus.aadhaarBackUrl)}`}
+                            alt="Aadhaar Back"
+                            style={{
+                              width: '100%',
+                              maxHeight: 120,
+                              objectFit: 'contain',
+                              borderRadius: 6,
+                            }}
+                            onError={(e) => {
+                              console.error('Error loading Aadhaar back image:', kycStatus.aadhaarBackUrl);
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </Paper>
+                      </Box>
+                    )}
+                  </Box>
+                ) : !kycStatus.aadhaarSubmitted ? (
+                  <Box sx={{ mt: 2, textAlign: 'center', py: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontFamily: '"Poppins", sans-serif', fontStyle: 'italic' }}>
+                      Not submitted yet
+                    </Typography>
+                  </Box>
+                ) : null}
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          {/* PAN Status */}
+          <Grid item xs={12} md={4}>
+            <Card 
+              elevation={0}
+              sx={{ 
+                borderRadius: 4, 
+                border: '2px solid', 
+                borderColor: getStatusColor(kycStatus.panStatus),
+                bgcolor: 'white',
+                boxShadow: `0 4px 20px ${getStatusColor(kycStatus.panStatus)}20`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 24px ${getStatusColor(kycStatus.panStatus)}30`,
+                },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <Box sx={{ 
+                    width: 56, 
+                    height: 56, 
+                    borderRadius: '50%', 
+                    bgcolor: getStatusColor(kycStatus.panStatus),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    mr: 2,
+                    boxShadow: `0 4px 12px ${getStatusColor(kycStatus.panStatus)}40`,
+                  }}>
+                    <CreditCard sx={{ fontSize: 32 }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', color: '#1a1a1a' }}>
+                    PAN Card
+                  </Typography>
+                </Box>
+                <Chip
+                  icon={getStatusIcon(kycStatus.panStatus)}
+                  label={getStatusText(kycStatus.panStatus)}
+                  sx={{
+                    bgcolor: getStatusColor(kycStatus.panStatus),
+                    color: 'white',
+                    fontWeight: 700,
+                    fontFamily: '"Poppins", sans-serif',
+                    mb: 2,
+                    fontSize: '0.875rem',
+                    height: 32,
+                    '& .MuiChip-icon': {
+                      color: 'white',
+                    },
+                  }}
+                />
+                {kycStatus.panSubmitted && kycStatus.panImageUrl ? (
+                  <Box sx={{ mt: 2, flexGrow: 1 }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        border: '1px solid #e8e8e8',
+                        bgcolor: '#fafafa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: 180,
+                      }}
+                    >
+                      <img 
+                        src={`http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(kycStatus.panImageUrl)}`}
+                        alt="PAN Card"
+                        style={{
+                          width: '100%',
+                          maxHeight: 180,
+                          objectFit: 'contain',
+                          borderRadius: 6,
+                        }}
+                        onError={(e) => {
+                          console.error('Error loading PAN image:', kycStatus.panImageUrl);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </Paper>
+                  </Box>
+                ) : !kycStatus.panSubmitted ? (
+                  <Box sx={{ mt: 2, textAlign: 'center', py: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontFamily: '"Poppins", sans-serif', fontStyle: 'italic' }}>
+                      Not submitted yet
+                    </Typography>
+                  </Box>
+                ) : null}
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          {/* Selfie Status */}
+          <Grid item xs={12} md={4}>
+            <Card 
+              elevation={0}
+              sx={{ 
+                borderRadius: 4, 
+                border: '2px solid', 
+                borderColor: getStatusColor(kycStatus.selfieStatus),
+                bgcolor: 'white',
+                boxShadow: `0 4px 20px ${getStatusColor(kycStatus.selfieStatus)}20`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 24px ${getStatusColor(kycStatus.selfieStatus)}30`,
+                },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                  <Box sx={{ 
+                    width: 56, 
+                    height: 56, 
+                    borderRadius: '50%', 
+                    bgcolor: getStatusColor(kycStatus.selfieStatus),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    mr: 2,
+                    boxShadow: `0 4px 12px ${getStatusColor(kycStatus.selfieStatus)}40`,
+                  }}>
+                    <Person sx={{ fontSize: 32 }} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: '"Poppins", sans-serif', color: '#1a1a1a' }}>
+                    Selfie
+                  </Typography>
+                </Box>
+                <Chip
+                  icon={getStatusIcon(kycStatus.selfieStatus)}
+                  label={getStatusText(kycStatus.selfieStatus)}
+                  sx={{
+                    bgcolor: getStatusColor(kycStatus.selfieStatus),
+                    color: 'white',
+                    fontWeight: 700,
+                    fontFamily: '"Poppins", sans-serif',
+                    mb: 2,
+                    fontSize: '0.875rem',
+                    height: 32,
+                    '& .MuiChip-icon': {
+                      color: 'white',
+                    },
+                  }}
+                />
+                {kycStatus.selfieSubmitted && kycStatus.selfieImageUrl ? (
+                  <Box sx={{ mt: 2, flexGrow: 1 }}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        border: '1px solid #e8e8e8',
+                        bgcolor: '#fafafa',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: 180,
+                      }}
+                    >
+                      <img 
+                        src={`http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(kycStatus.selfieImageUrl)}`}
+                        alt="Selfie"
+                        style={{
+                          width: '100%',
+                          maxHeight: 180,
+                          objectFit: 'contain',
+                          borderRadius: 6,
+                        }}
+                        onError={(e) => {
+                          console.error('Error loading Selfie image:', kycStatus.selfieImageUrl);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </Paper>
+                  </Box>
+                ) : !kycStatus.selfieSubmitted ? (
+                  <Box sx={{ mt: 2, textAlign: 'center', py: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontFamily: '"Poppins", sans-serif', fontStyle: 'italic' }}>
+                      Not submitted yet
+                    </Typography>
+                  </Box>
+                ) : null}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  };
+  
+  // Show loading while fetching status
+  if (kycLoading) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  
+  // Show status view if documents are submitted
+  if (viewMode === 'status' && kycStatus) {
+    return (
+      <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%)', py: 5 }}>
+        <Container maxWidth="lg">
+          <IconButton
+            onClick={() => navigate(-1)}
+            sx={{
+              mb: 3,
+              bgcolor: 'white',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              border: '1px solid #e8e8e8',
+              '&:hover': { 
+                bgcolor: '#f8f9fa',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          
+          <Card elevation={0} sx={{ borderRadius: 4, border: '1px solid #e8e8e8', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', background: 'white' }}>
+            <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+              {renderStatusView()}
+            </CardContent>
+          </Card>
         </Container>
       </Box>
     );
@@ -726,32 +2249,106 @@ const KYCVerificationPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
-        py: 4,
+        background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%)',
+        py: { xs: 3, md: 5 },
+        position: 'relative',
       }}
     >
       <Container maxWidth="lg">
         <IconButton
           onClick={() => navigate(-1)}
           sx={{
-            mb: 2,
+            mb: 3,
             bgcolor: 'white',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid #e8e8e8',
+            '&:hover': { 
+              bgcolor: '#f8f9fa',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+              transform: 'translateY(-2px)',
+            },
+            transition: 'all 0.3s ease',
           }}
         >
           <ArrowBack />
         </IconButton>
         
-        <Card elevation={10} sx={{ borderRadius: 4 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, textAlign: 'center', mb: 1 }}>
+        <Card 
+          elevation={0} 
+          sx={{ 
+            borderRadius: 4,
+            border: '1px solid #e8e8e8',
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+            background: 'white',
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+            <Box sx={{ textAlign: 'center', mb: 5 }}>
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 800, 
+                  mb: 1.5,
+                  fontFamily: '"Poppins", sans-serif',
+                  color: '#1a1a1a',
+                  fontSize: { xs: '1.75rem', md: '2.25rem' },
+                  letterSpacing: '-0.5px',
+                }}
+              >
               KYC Verification
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 4 }}>
-              Complete your KYC to start offering/booking services
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: '#666',
+                  fontFamily: '"Poppins", sans-serif',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  maxWidth: 600,
+                  mx: 'auto',
+                }}
+              >
+                Complete your KYC verification to start offering or booking services on our platform
             </Typography>
+            </Box>
             
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+            <Stepper 
+              activeStep={activeStep} 
+              sx={{ 
+                mb: 6,
+                '& .MuiStep-root': {
+                  '& .MuiStepLabel-root': {
+                    '& .MuiStepLabel-iconContainer': {
+                      '& .MuiSvgIcon-root': {
+                        fontSize: '2rem',
+                        '&.Mui-active': {
+                          color: '#667eea',
+                        },
+                        '&.Mui-completed': {
+                          color: '#4CAF50',
+                        },
+                      },
+                    },
+                  },
+                },
+                '& .MuiStepLabel-root .Mui-completed': {
+                  color: '#4CAF50',
+                },
+                '& .MuiStepLabel-root .Mui-active': {
+                  color: '#667eea',
+                },
+                '& .MuiStepLabel-label': {
+                  fontFamily: '"Poppins", sans-serif',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  '&.Mui-active': {
+                    fontWeight: 700,
+                    color: '#667eea',
+                  },
+                },
+              }}
+            >
               {steps.map((label) => (
                 <Step key={label}>
                   <StepLabel>{label}</StepLabel>
@@ -760,20 +2357,55 @@ const KYCVerificationPage: React.FC = () => {
             </Stepper>
             
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 4,
+                  borderRadius: 2,
+                  fontFamily: '"Poppins", sans-serif',
+                  '& .MuiAlert-message': {
+                    fontFamily: '"Poppins", sans-serif',
+                    fontWeight: 500,
+                    fontSize: '0.95rem',
+                  },
+                }} 
+                onClose={() => setError('')}
+              >
                 {error}
               </Alert>
             )}
             
             {renderStepContent()}
             
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              mt: 6, 
+              pt: 4, 
+              borderTop: '2px solid #f0f0f0',
+            }}>
               <Button
                 disabled={activeStep === 0}
                 onClick={handleBack}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  fontFamily: '"Poppins", sans-serif',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  color: activeStep === 0 ? '#ccc' : '#666',
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  '&:hover': {
+                    bgcolor: activeStep === 0 ? 'transparent' : 'rgba(0,0,0,0.04)',
+                  },
+                  '&.Mui-disabled': {
+                    color: '#ccc',
+                  },
+                }}
               >
-                Back
+                ← Back
               </Button>
               
               {activeStep === steps.length - 1 ? (
@@ -781,13 +2413,27 @@ const KYCVerificationPage: React.FC = () => {
                   variant="contained"
                   onClick={handleSubmit}
                   disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}
+                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
                   sx={{
                     bgcolor: '#667eea',
-                    '&:hover': { bgcolor: '#764ba2' },
-                    px: 4,
+                    px: 6,
+                    py: 1.8,
                     textTransform: 'none',
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    fontFamily: '"Poppins", sans-serif',
+                    fontSize: '1.05rem',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 14px rgba(102,126,234,0.35)',
+                    '&:hover': {
+                      bgcolor: '#5568d3',
+                      boxShadow: '0 6px 20px rgba(102,126,234,0.45)',
+                      transform: 'translateY(-2px)',
+                    },
+                    '&:disabled': {
+                      bgcolor: '#ccc',
+                      boxShadow: 'none',
+                    },
+                    transition: 'all 0.3s ease',
                   }}
                 >
                   {loading ? 'Submitting...' : 'Submit KYC'}
@@ -798,13 +2444,23 @@ const KYCVerificationPage: React.FC = () => {
                   onClick={handleNext}
                   sx={{
                     bgcolor: '#667eea',
-                    '&:hover': { bgcolor: '#764ba2' },
-                    px: 4,
+                    px: 6,
+                    py: 1.8,
                     textTransform: 'none',
-                    fontWeight: 600,
+                    fontWeight: 700,
+                    fontFamily: '"Poppins", sans-serif',
+                    fontSize: '1.05rem',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 14px rgba(102,126,234,0.35)',
+                    '&:hover': {
+                      bgcolor: '#5568d3',
+                      boxShadow: '0 6px 20px rgba(102,126,234,0.45)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s ease',
                   }}
                 >
-                  Next
+                  Next →
                 </Button>
               )}
             </Box>

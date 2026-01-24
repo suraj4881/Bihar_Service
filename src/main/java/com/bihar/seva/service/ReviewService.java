@@ -1,9 +1,8 @@
 package com.bihar.seva.service;
 
 import com.bihar.seva.model.Review;
-import com.bihar.seva.model.Provider;
 import com.bihar.seva.repositories.ReviewRepository;
-import com.bihar.seva.repositories.ProviderRepository;
+import com.bihar.seva.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +17,7 @@ import java.util.Optional;
 public class ReviewService {
     
     private final ReviewRepository reviewRepository;
-    private final ProviderRepository providerRepository;
+    private final UserRepository userRepository;
     
     public Review createReview(Review review) {
         review.setCreatedAt(LocalDateTime.now());
@@ -54,10 +53,10 @@ public class ReviewService {
                 .average()
                 .orElse(0.0);
             
-            Provider provider = providerRepository.findById(providerId).orElse(null);
-            if (provider != null) {
+            com.bihar.seva.model.User provider = userRepository.findById(providerId).orElse(null);
+            if (provider != null && "PROVIDER".equals(provider.getRole())) {
                 provider.setRating(Math.round(avgRating * 10.0) / 10.0);
-                providerRepository.save(provider);
+                userRepository.save(provider);
                 log.info("Updated provider {} rating to: {}", providerId, avgRating);
             }
         }

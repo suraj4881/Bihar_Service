@@ -41,6 +41,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Service, ServiceCategory, ServiceSearchParams } from '../types/service';
 import { serviceService } from '../services/serviceService';
+import AppBar from '../components/AppBar';
 
 const ServiceListPage: React.FC = () => {
   const navigate = useNavigate();

@@ -1,12 +1,12 @@
-// Enhanced theme configuration for BiharSeva
+// Enhanced theme configuration for QuickSeva Bihar
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#FF6B35',
-      light: '#FF8A65',
-      dark: '#E64A19',
+      main: '#3B82F6',
+      light: '#60A5FA',
+      dark: '#2563EB',
       contrastText: '#FFFFFF',
     },
     secondary: {

@@ -1,15 +1,14 @@
 package com.bihar.seva.controller;
 
 import com.bihar.seva.dto.ApiResponse;
-import com.bihar.seva.model.Provider;
-import com.bihar.seva.service.ProviderSearchService;
+import com.bihar.seva.model.DynamicService;
+import com.bihar.seva.service.DynamicServiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/search")
@@ -18,91 +17,40 @@ import java.util.Map;
 @Slf4j
 public class SearchController {
     
-    private final ProviderSearchService searchService;
+    private final DynamicServiceService dynamicServiceService;
     
-    // Advanced provider search with all filters
-    @GetMapping("/providers")
-    public ResponseEntity<ApiResponse> searchProviders(
-            @RequestParam(required = false) String skill,
+    // Search dynamic services
+    @GetMapping("/services")
+    public ResponseEntity<ApiResponse<List<DynamicService>>> searchServices(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) String district,
-            @RequestParam(required = false) Boolean verified,
-            @RequestParam(required = false) Double minRating,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) String sortBy) {
+            @RequestParam(required = false) String pincode,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false, defaultValue = "5.0") Double radiusKm) {
         try {
-            Map<String, Object> filters = Map.of(
-                "skill", skill != null ? skill : "",
-                "city", city != null ? city : "",
-                "district", district != null ? district : "",
-                "verified", verified != null ? verified : false,
-                "minRating", minRating != null ? minRating : 0.0,
-                "maxPrice", maxPrice != null ? maxPrice : Double.MAX_VALUE,
-                "minPrice", minPrice != null ? minPrice : 0.0,
-                "sortBy", sortBy != null ? sortBy : "rating"
-            );
+            List<DynamicService> services;
             
-            List<Provider> providers = searchService.searchProviders(filters);
-            return ResponseEntity.ok(new ApiResponse(true, "Providers found", providers));
+            // Priority: GPS > Pincode > City > Text search
+            if (latitude != null && longitude != null) {
+                // GPS-based search with radius
+                services = dynamicServiceService.searchServices(query, latitude, longitude, radiusKm);
+            } else if (pincode != null && !pincode.trim().isEmpty()) {
+                // Pincode-based search
+                services = dynamicServiceService.searchServicesByPincode(pincode.trim(), query, category);
+            } else if (city != null && !city.trim().isEmpty()) {
+                // City-based search
+                services = dynamicServiceService.searchServicesByCity(city.trim(), query, category);
+            } else {
+                // Text search only
+                services = dynamicServiceService.searchServices(query, null, null, null);
+            }
+            
+            log.info("Found {} services", services.size());
+            return ResponseEntity.ok(new ApiResponse(true, "Services found", services));
         } catch (Exception e) {
-            log.error("Error searching providers: ", e);
-            return ResponseEntity.badRequest()
-                .body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    // Get providers by category
-    @GetMapping("/providers/category/{category}")
-    public ResponseEntity<ApiResponse> getProvidersByCategory(@PathVariable String category) {
-        try {
-            List<Provider> providers = searchService.getProvidersByCategory(category);
-            return ResponseEntity.ok(new ApiResponse(true, "Providers found", providers));
-        } catch (Exception e) {
-            log.error("Error fetching providers by category: ", e);
-            return ResponseEntity.badRequest()
-                .body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    // Get top rated providers
-    @GetMapping("/providers/top-rated")
-    public ResponseEntity<ApiResponse> getTopRatedProviders(
-            @RequestParam(defaultValue = "10") int limit) {
-        try {
-            List<Provider> providers = searchService.getTopRatedProviders(limit);
-            return ResponseEntity.ok(new ApiResponse(true, "Top providers retrieved", providers));
-        } catch (Exception e) {
-            log.error("Error fetching top providers: ", e);
-            return ResponseEntity.badRequest()
-                .body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    // Get nearby providers (by city for now, can be enhanced with coordinates)
-    @GetMapping("/providers/nearby")
-    public ResponseEntity<ApiResponse> getNearbyProviders(
-            @RequestParam String city,
-            @RequestParam(required = false) String skill) {
-        try {
-            List<Provider> providers = searchService.getNearbyProviders(city, skill);
-            return ResponseEntity.ok(new ApiResponse(true, "Nearby providers found", providers));
-        } catch (Exception e) {
-            log.error("Error fetching nearby providers: ", e);
-            return ResponseEntity.badRequest()
-                .body(new ApiResponse(false, e.getMessage(), null));
-        }
-    }
-    
-    // Get recommended providers
-    @GetMapping("/providers/recommended")
-    public ResponseEntity<ApiResponse> getRecommendedProviders(
-            @RequestParam(required = false) String userId) {
-        try {
-            List<Provider> providers = searchService.getRecommendedProviders(userId);
-            return ResponseEntity.ok(new ApiResponse(true, "Recommended providers retrieved", providers));
-        } catch (Exception e) {
-            log.error("Error fetching recommended providers: ", e);
+            log.error("Error searching services: ", e);
             return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage(), null));
         }

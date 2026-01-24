@@ -1,5 +1,7 @@
 package com.bihar.seva;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -10,6 +12,8 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 @SpringBootApplication
 @EnableMongoAuditing
 public class BiharSevaApplication implements CommandLineRunner {
+
+	private static final Logger logger = LoggerFactory.getLogger(BiharSevaApplication.class);
 
 	@Autowired
 	private MongoTemplate mongoTemplate;
@@ -23,13 +27,14 @@ public class BiharSevaApplication implements CommandLineRunner {
 		// Fix for duplicate OTP index issues
 		try {
 			if (mongoTemplate.collectionExists("otps")) {
-				// Drop the entire collection to remove all problematic indexes
 				mongoTemplate.dropCollection("otps");
-				System.out.println("Dropped otps collection to fix index conflicts. It will be recreated on first OTP request.");
+				logger.info("Dropped otps collection to fix index conflicts. It will be recreated on first OTP request.");
 			}
 		} catch (Exception e) {
-			System.out.println("Could not fix OTP collection: " + e.getMessage());
+			logger.error("Could not fix OTP collection", e);
 		}
+		
+		// Note: Service text index fix is handled in MongoIndexFixer component
 	}
 
 }

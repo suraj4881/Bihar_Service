@@ -45,16 +45,16 @@ const translations: Record<Language, Record<string, string>> = {
     'login.forgot': 'Forgot Password?',
     'login.submit': 'Login',
     'login.or': 'OR',
-    'login.emailOtp': 'Login with Email OTP (FREE)',
-    'login.phoneOtp': 'Login with Phone OTP',
+    'login.emailOtp': 'Login with Email OTP',
     'login.noAccount': 'Don\'t have an account?',
     'login.signup': 'Sign Up',
     'login.error': 'Invalid email or password',
     
     // Register Page
-    'register.welcome': 'Join BiharSeva',
+    'register.welcome': 'Join QuickSeva Bihar',
     'register.subtitle': 'Create your account and start your journey',
     'register.title': 'Create Account',
+    'register.fillDetails': 'Fill in your details to get started 🚀',
     'register.name': 'Full Name',
     'register.email': 'Email Address',
     'register.phone': 'Phone Number',
@@ -114,7 +114,7 @@ const translations: Record<Language, Record<string, string>> = {
     'section.howItWorks.title': 'How It Works',
     'section.howItWorks.subtitle': 'Get started in 4 simple steps',
     'section.providers.title': 'Top Rated Providers',
-    'section.providers.subtitle': 'Trusted professionals verified by BiharSeva',
+    'section.providers.subtitle': 'Trusted professionals verified by QuickSeva Bihar',
     
     // How It Works Steps
     'step1.title': '1. Search Service',
@@ -136,24 +136,29 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.providers': 'For Providers',
     'footer.join': 'Join as Provider',
     'footer.contact': 'Contact',
-    'footer.email': 'support@biharseva.com',
+    'footer.email': 'support@quicksevabihar.com',
     'footer.phone': '+91 98765 43210',
     'footer.contactUs': 'Contact Us',
-    'footer.copyright': '© 2024 BiharSeva. All rights reserved. Made with ❤️ in Bihar',
+    'footer.copyright': '© 2024 QuickSeva Bihar. All rights reserved. Made with ❤️ in Bihar',
     
     // Dashboard
     'dashboard.provider.title': 'My Workspace',
     'dashboard.kyc.status': 'Identity Verification',
     'dashboard.kyc.verified': 'Verified',
+    'dashboard.kyc.complete': 'Complete',
     'dashboard.kyc.pending': 'Pending Verification',
+    'dashboard.kyc.underProcess': 'Under Process',
     'dashboard.kyc.rejected': 'Rejected',
     'dashboard.kyc.notSubmitted': 'KYC Not Submitted',
     'dashboard.kyc.verifiedOn': 'Verified on',
     'dashboard.kyc.pendingMsg': 'Your documents are under review. We\'ll notify you once verified.',
-    'dashboard.kyc.rejectedMsg': 'Rejected - Reason',
+    'dashboard.kyc.underProcessMsg': 'Your KYC documents are under review. Verification is in process. We\'ll notify you once verified.',
+    'dashboard.kyc.rejectedMsg': 'Your KYC has been rejected.',
+    'dashboard.kyc.reUploadMsg': 'Please re-upload your documents with corrections.',
     'dashboard.kyc.notSubmittedMsg': 'Complete your KYC verification to start receiving bookings and build customer trust.',
     'dashboard.kyc.submit': 'Submit KYC',
     'dashboard.kyc.viewStatus': 'View Status',
+    'dashboard.kyc.reUpload': 'Re-upload Documents',
     'dashboard.stats.totalBookings': 'Total Bookings',
     'dashboard.stats.totalEarnings': 'Total Earnings',
     'dashboard.stats.pendingBookings': 'Pending Bookings',
@@ -221,13 +226,12 @@ const translations: Record<Language, Record<string, string>> = {
     'login.submit': 'लॉगिन',
     'login.or': 'या',
     'login.emailOtp': 'ईमेल OTP से लॉगिन करें (मुफ्त)',
-    'login.phoneOtp': 'फोन OTP से लॉगिन करें',
     'login.noAccount': 'खाता नहीं है?',
     'login.signup': 'साइन अप करें',
     'login.error': 'अमान्य ईमेल या पासवर्ड',
     
     // Register Page
-    'register.welcome': 'BiharSeva में शामिल हों',
+    'register.welcome': 'QuickSeva Bihar में शामिल हों',
     'register.subtitle': 'अपना खाता बनाएं और अपनी यात्रा शुरू करें',
     'register.title': 'खाता बनाएं',
     'register.name': 'पूरा नाम',
@@ -301,7 +305,7 @@ const translations: Record<Language, Record<string, string>> = {
     'section.howItWorks.title': 'यह कैसे काम करता है',
     'section.howItWorks.subtitle': '4 सरल चरणों में शुरू करें',
     'section.providers.title': 'शीर्ष रेटेड प्रदाता',
-    'section.providers.subtitle': 'BiharSeva द्वारा सत्यापित विश्वसनीय पेशेवर',
+    'section.providers.subtitle': 'QuickSeva Bihar द्वारा सत्यापित विश्वसनीय पेशेवर',
     
     // How It Works Steps
     'step1.title': '1. सेवा खोजें',
@@ -323,24 +327,29 @@ const translations: Record<Language, Record<string, string>> = {
     'footer.providers': 'प्रदाताओं के लिए',
     'footer.join': 'प्रदाता के रूप में जुड़ें',
     'footer.contact': 'संपर्क',
-    'footer.email': 'support@biharseva.com',
+    'footer.email': 'support@quicksevabihar.com',
     'footer.phone': '+91 98765 43210',
     'footer.contactUs': 'हमसे संपर्क करें',
-    'footer.copyright': '© 2024 BiharSeva. सर्वाधिकार सुरक्षित। बिहार में ❤️ के साथ बनाया गया',
+    'footer.copyright': '© 2024 QuickSeva Bihar. सर्वाधिकार सुरक्षित। बिहार में ❤️ के साथ बनाया गया',
     
     // Dashboard
     'dashboard.provider.title': 'मेरा कार्यक्षेत्र',
     'dashboard.kyc.status': 'पहचान सत्यापन',
     'dashboard.kyc.verified': 'सत्यापित',
+    'dashboard.kyc.complete': 'पूर्ण',
     'dashboard.kyc.pending': 'लंबित सत्यापन',
+    'dashboard.kyc.underProcess': 'प्रक्रिया में',
     'dashboard.kyc.rejected': 'अस्वीकृत',
     'dashboard.kyc.notSubmitted': 'KYC जमा नहीं किया गया',
     'dashboard.kyc.verifiedOn': 'सत्यापित',
     'dashboard.kyc.pendingMsg': 'आपके दस्तावेज़ जांच के अधीन हैं। हम सत्यापन होने पर आपको सूचित करेंगे।',
-    'dashboard.kyc.rejectedMsg': 'अस्वीकृत - कारण',
+    'dashboard.kyc.underProcessMsg': 'आपके KYC दस्तावेज़ जांच के अधीन हैं। सत्यापन प्रक्रिया में है। हम सत्यापन होने पर आपको सूचित करेंगे।',
+    'dashboard.kyc.rejectedMsg': 'आपका KYC अस्वीकृत कर दिया गया है।',
+    'dashboard.kyc.reUploadMsg': 'कृपया सुधार के साथ अपने दस्तावेज़ फिर से अपलोड करें।',
     'dashboard.kyc.notSubmittedMsg': 'बुकिंग प्राप्त करना शुरू करने और ग्राहकों का भरोसा बनाने के लिए अपना KYC सत्यापन पूरा करें।',
     'dashboard.kyc.submit': 'KYC जमा करें',
     'dashboard.kyc.viewStatus': 'स्थिति देखें',
+    'dashboard.kyc.reUpload': 'दस्तावेज़ फिर से अपलोड करें',
     'dashboard.stats.totalBookings': 'कुल बुकिंग',
     'dashboard.stats.totalEarnings': 'कुल कमाई',
     'dashboard.stats.pendingBookings': 'लंबित बुकिंग',
@@ -408,7 +417,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         }
       }
     } catch (e) {
-      console.error('Error reading user language:', e);
     }
     
     // Priority 3: Default to English
@@ -559,7 +567,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
         localStorage.setItem('user', JSON.stringify(user));
       }
     } catch (e) {
-      console.error('❌ Error updating user language:', e);
     }
   };
 

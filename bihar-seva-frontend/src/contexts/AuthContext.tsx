@@ -37,7 +37,6 @@ const safeGetLocalStorage = (key: string): string | null => {
     }
     return item;
   } catch (error) {
-    console.error(`Error reading ${key} from localStorage:`, error);
     return null;
   }
 };
@@ -48,7 +47,6 @@ const safeJSONParse = <T,>(value: string | null): T | null => {
   try {
     return JSON.parse(value) as T;
   } catch (error) {
-    console.error('Error parsing JSON:', error);
     return null;
   }
 };
@@ -62,7 +60,7 @@ const safeSetLocalStorage = (key: string, value: any): void => {
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
     }
   } catch (error) {
-    console.error(`Error setting ${key} in localStorage:`, error);
+    // Ignore localStorage errors
   }
 };
 
@@ -73,7 +71,7 @@ const clearAuthData = (): void => {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error(`Error removing ${key}:`, error);
+      // Ignore localStorage errors
     }
   });
 };
@@ -208,7 +206,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const savedLanguage = localStorage.getItem('language');
           if (savedLanguage && (savedLanguage === 'hi' || savedLanguage === 'en')) {
             // Keep language from HomePage (user just selected it)
-            console.log('✅ AuthContext: Preserving language from HomePage:', savedLanguage);
           } else if (userData.language) {
             // Fallback to user profile language if HomePage language not set
             const userLang = userData.language.toLowerCase();
@@ -224,7 +221,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const savedLanguage = localStorage.getItem('language');
           if (savedLanguage && (savedLanguage === 'hi' || savedLanguage === 'en')) {
             // Keep language from HomePage (user just selected it)
-            console.log('✅ AuthContext: Preserving language from HomePage:', savedLanguage);
           } else if (providerData.language) {
             // Fallback to provider profile language if HomePage language not set
             const userLang = providerData.language.toLowerCase();
@@ -261,7 +257,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(data.message || 'Registration failed');
       }
     } catch (error: any) {
-      console.error('❌ Registration error:', error);
       throw new Error(error.message || 'Registration failed. Please try again.');
     }
   }, []);
@@ -273,7 +268,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (user?.id) {
       fetch(`http://localhost:8080/api/auth/logout?userId=${user.id}`, {
         method: 'POST',
-      }).catch(err => console.error('Logout API error:', err));
+      }).catch(() => {
+        // Ignore logout API errors
+      });
     }
     
     setUser(null);

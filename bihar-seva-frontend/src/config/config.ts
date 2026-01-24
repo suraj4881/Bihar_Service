@@ -10,13 +10,12 @@ export const config = {
 
   // Feature Flags
   features: {
-    useDummyData: process.env.REACT_APP_USE_DUMMY_DATA === 'true' || process.env.NODE_ENV === 'development',
     enableLogging: process.env.NODE_ENV === 'development',
   },
 
   // App Settings
   app: {
-    name: 'BiharSeva',
+    name: 'QuickSeva Bihar',
     version: '1.0.0',
     defaultCity: 'Patna',
   },
@@ -33,10 +32,5 @@ export const getApiUrl = (endpoint: string) => {
   return `${config.api.baseUrl}${endpoint}`;
 };
 
-// Helper to log only in development
-export const devLog = (...args: any[]) => {
-  if (config.features.enableLogging) {
-    console.log(...args);
-  }
-};
+// Helper to log only in development (removed - use proper logging service if needed)
 

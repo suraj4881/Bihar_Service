@@ -41,13 +41,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // ✅ If authentication is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
-    console.log('🔒 ProtectedRoute: Not authenticated, redirecting to login');
     return <Navigate to={redirectTo} replace />;
   }
 
   // ✅ If specific role is required but user doesn't have it
   if (requiredRole && user?.role !== requiredRole) {
-    console.warn(`⚠️ ProtectedRoute: Access denied - Required role "${requiredRole}" but user has "${user?.role}"`);
     return <Navigate to="/" replace />;
   }
 

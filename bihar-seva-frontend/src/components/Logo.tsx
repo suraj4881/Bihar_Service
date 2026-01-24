@@ -109,10 +109,10 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium', showText = true, onClick }
             }}
           >
             <Box component="span" sx={{ color: isDark ? '#E2E8F0' : '#212121' }}>
-              Bihar
+              QuickSeva
             </Box>
             <Box component="span" sx={{ color: '#FF6B35' }}>
-              Seva
+              {' '}Bihar
             </Box>
           </Typography>
           {size !== 'small' && (

@@ -8,34 +8,25 @@ import {
   Button,
   InputAdornment,
   Paper,
-  AppBar,
-  Toolbar,
   IconButton,
   Card,
-  alpha,
   CircularProgress,
+  alpha,
 } from '@mui/material';
 import {
   Search,
   LocationOn,
-  Menu as MenuIcon,
-  Login,
-  PersonAdd,
   Phone,
   Email,
-  Brightness4,
-  Brightness7,
-  Language as LanguageIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useThemeMode } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import Logo from '../components/Logo';
+import { useThemeMode } from '../contexts/ThemeContext';
+import AppBar from '../components/AppBar';
 import CategoryGrid from '../components/home/CategoryGrid';
 import HowItWorks from '../components/home/HowItWorks';
 import FeaturedProviders from '../components/home/FeaturedProviders';
-import { getDummyStats } from '../data/dummyProviders';
 
 interface Stats {
   totalProviders: number;
@@ -49,11 +40,18 @@ interface Stats {
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const { mode, toggleTheme } = useThemeMode();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
+  const { mode } = useThemeMode();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('Patna');
-  const [stats, setStats] = useState<Stats>(getDummyStats());
+  const [stats, setStats] = useState<Stats>({
+    totalProviders: 0,
+    verifiedProviders: 0,
+    totalCustomers: 0,
+    totalBookings: 0,
+    totalCategories: 0,
+    averageRating: 0,
+  });
   const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
@@ -67,16 +65,16 @@ const HomePage: React.FC = () => {
       
       if (data.success && data.data) {
         setStats({
-          totalProviders: data.data.totalProviders || getDummyStats().totalProviders,
-          verifiedProviders: data.data.verifiedProviders || getDummyStats().verifiedProviders,
-          totalCustomers: data.data.totalCustomers || getDummyStats().totalCustomers,
-          totalBookings: data.data.totalBookings || getDummyStats().totalBookings,
-          totalCategories: data.data.totalCategories || 12,
-          averageRating: data.data.averageRating || getDummyStats().averageRating,
+          totalProviders: data.data.totalProviders || 0,
+          verifiedProviders: data.data.verifiedProviders || 0,
+          totalCustomers: data.data.totalCustomers || 0,
+          totalBookings: data.data.totalBookings || 0,
+          totalCategories: data.data.totalCategories || 0,
+          averageRating: data.data.averageRating || 0,
         });
       }
     } catch (error) {
-      // Dummy stats already set in state
+      // Keep default stats (all zeros)
     } finally {
       setStatsLoading(false);
     }
@@ -85,8 +83,6 @@ const HomePage: React.FC = () => {
   const handleSearch = () => {
     navigate(`/services?q=${searchQuery}&location=${location}`);
   };
-
-  const popularSearches = ['Plumber', 'Electrician', 'Cleaner', 'Carpenter', 'AC Repair'];
 
   const formatNumber = (num: number): string => {
     if (num >= 1000) {
@@ -98,164 +94,7 @@ const HomePage: React.FC = () => {
   return (
     <Box>
       {/* Navigation Bar */}
-      <AppBar
-        position="sticky"
-        sx={{
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-        }}
-      >
-        <Toolbar sx={{ py: 1 }}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            sx={{ mr: 2, display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          <Logo size="medium" showText onClick={() => navigate('/')} />
-
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* Language Toggle */}
-          <Button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const newLang = language === 'en' ? 'hi' : 'en';
-              localStorage.setItem('language', newLang);
-              try {
-                sessionStorage.setItem('language', newLang);
-              } catch (e) {
-                // Ignore sessionStorage errors
-              }
-              setLanguage(newLang);
-            }}
-            startIcon={<LanguageIcon />}
-            sx={{
-              mr: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              color: 'text.primary',
-              bgcolor: alpha('#FF6B35', 0.1),
-              '&:hover': {
-                bgcolor: alpha('#FF6B35', 0.2),
-              },
-            }}
-          >
-            {language === 'en' ? 'हिं' : 'EN'}
-          </Button>
-
-          {/* Dark/Light Mode Toggle */}
-          <IconButton
-            onClick={toggleTheme}
-            color="inherit"
-            sx={{
-              mr: 2,
-              bgcolor: alpha('#FF6B35', 0.1),
-              '&:hover': {
-                bgcolor: alpha('#FF6B35', 0.2),
-              },
-            }}
-          >
-            {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
-          </IconButton>
-
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, mr: 2 }}>
-            <Button
-              color="inherit"
-              onClick={() => navigate('/services')}
-              sx={{ fontWeight: 600, textTransform: 'none' }}
-            >
-              {t('nav.services')}
-            </Button>
-            <Button
-              color="inherit"
-              onClick={() => navigate('/about')}
-              sx={{ fontWeight: 600, textTransform: 'none' }}
-            >
-              {t('nav.about')}
-            </Button>
-            <Button
-              color="inherit"
-              onClick={() => navigate('/contact')}
-              sx={{ fontWeight: 600, textTransform: 'none' }}
-            >
-              {t('nav.contact')}
-            </Button>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {isAuthenticated ? (
-              <>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/profile')}
-                  sx={{
-                    textTransform: 'none',
-                    borderColor: '#FF6B35',
-                    color: '#FF6B35',
-                    fontWeight: 600,
-                    display: { xs: 'none', sm: 'inline-flex' },
-                  }}
-                >
-                  {user?.name || 'Profile'}
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    const role = localStorage.getItem('role');
-                    if (role === 'PROVIDER') {
-                      navigate('/provider-dashboard');
-                    } else if (role === 'ADMIN') {
-                      navigate('/admin-dashboard');
-                    } else {
-                      navigate('/dashboard');
-                    }
-                  }}
-                  sx={{
-                    bgcolor: '#FF6B35',
-                    '&:hover': { bgcolor: '#E64A19' },
-                    textTransform: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  Dashboard
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  startIcon={<Login />}
-                  onClick={() => navigate('/login')}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    display: { xs: 'none', sm: 'inline-flex' },
-                  }}
-                >
-                  {t('nav.login')}
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<PersonAdd />}
-                  onClick={() => navigate('/register')}
-                  sx={{
-                    bgcolor: '#FF6B35',
-                    '&:hover': { bgcolor: '#E64A19' },
-                    textTransform: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  {t('nav.signup')}
-                </Button>
-              </>
-            )}
-          </Box>
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="default" position="sticky" />
 
       {/* Hero Section - Perfect Layout */}
       <Box
@@ -265,8 +104,8 @@ const HomePage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           background: mode === 'dark' 
-            ? 'linear-gradient(135deg, #0A0E27 0%, #1A1F3A 50%, #2D1B69 100%)'
-            : 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%)',
+            ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%)'
+            : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
           overflow: 'hidden',
           '&::before': {
             content: '""',
@@ -292,7 +131,7 @@ const HomePage: React.FC = () => {
                 <Typography
                   variant="overline"
                   sx={{
-                    color: alpha('#FFD700', 0.9),
+                    color: alpha('#60A5FA', 0.9),
                     fontWeight: 700,
                     fontSize: '0.9rem',
                     letterSpacing: '2px',
@@ -322,8 +161,8 @@ const HomePage: React.FC = () => {
                   <Box
                     component="span"
                     sx={{
-                      color: '#FFD700',
-                      textShadow: '0 4px 12px rgba(255,215,0,0.5)',
+                      color: '#60A5FA',
+                      textShadow: '0 4px 12px rgba(96, 165, 250, 0.5)',
                     }}
                   >
                     {t('hero.subtitle')}
@@ -405,9 +244,9 @@ const HomePage: React.FC = () => {
                           '& fieldset': { 
                             borderColor: mode === 'dark' ? '#2D3748' : '#E0E0E0' 
                           },
-                          '&:hover fieldset': { borderColor: '#FF6B35' },
+                          '&:hover fieldset': { borderColor: '#3B82F6' },
                           '&.Mui-focused fieldset': { 
-                            borderColor: '#FF6B35', 
+                            borderColor: '#3B82F6', 
                             borderWidth: 2 
                           },
                         },
@@ -415,7 +254,7 @@ const HomePage: React.FC = () => {
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Search sx={{ color: '#FF6B35', fontSize: 24 }} />
+                            <Search sx={{ color: '#3B82F6', fontSize: 24 }} />
                           </InputAdornment>
                         ),
                       }}
@@ -435,9 +274,9 @@ const HomePage: React.FC = () => {
                           '& fieldset': { 
                             borderColor: mode === 'dark' ? '#2D3748' : '#E0E0E0' 
                           },
-                          '&:hover fieldset': { borderColor: '#FF6B35' },
+                          '&:hover fieldset': { borderColor: '#3B82F6' },
                           '&.Mui-focused fieldset': { 
-                            borderColor: '#FF6B35', 
+                            borderColor: '#3B82F6', 
                             borderWidth: 2 
                           },
                         },
@@ -445,7 +284,7 @@ const HomePage: React.FC = () => {
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <LocationOn sx={{ color: '#FF6B35' }} />
+                            <LocationOn sx={{ color: '#3B82F6' }} />
                           </InputAdornment>
                         ),
                       }}
@@ -459,12 +298,12 @@ const HomePage: React.FC = () => {
                       onClick={handleSearch}
                       sx={{
                         height: '56px',
-                        bgcolor: '#FF6B35',
-                        '&:hover': {
-                          bgcolor: '#E64A19',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 8px 24px rgba(255,107,53,0.4)',
-                        },
+                          bgcolor: '#3B82F6',
+                          '&:hover': {
+                            bgcolor: '#2563EB',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+                          },
                         fontWeight: 700,
                         fontSize: '1.05rem',
                         boxShadow: '0 4px 16px rgba(255,107,53,0.3)',
@@ -476,146 +315,129 @@ const HomePage: React.FC = () => {
                   </Grid>
                 </Grid>
 
-                {/* Popular Searches */}
-                <Box sx={{ mt: 2.5, display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
-                    {t('search.popular')}
+                {/* Search Info */}
+                <Box sx={{ mt: 2.5 }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: mode === 'dark' ? '#A0AEC0' : 'text.secondary',
+                      textAlign: 'center',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {language === 'hi' 
+                      ? 'किसी भी सेवा के लिए खोजें - हमारे पास सभी प्रकार की सेवाएं उपलब्ध हैं'
+                      : 'Search for any service - We have all types of services available'
+                    }
                   </Typography>
-                  {popularSearches.map((search) => {
-                    // Map English terms to translation keys
-                    const termKeyMap: Record<string, string> = {
-                      'Plumber': 'service.plumbing',
-                      'Electrician': 'service.electrical',
-                      'Cleaner': 'service.cleaning',
-                      'AC Repair': 'service.ac',
-                      'Painter': 'service.painting',
-                    };
-                    const translatedTerm = termKeyMap[search] ? t(termKeyMap[search]) : search;
-                    
-                    return (
-                      <Button
-                        key={search}
-                        size="small"
-                        onClick={() => {
-                          setSearchQuery(search);
-                          navigate(`/services?q=${search}&location=${location}`);
-                        }}
-                        sx={{
-                          textTransform: 'none',
-                          color: '#FF6B35',
-                          fontWeight: 600,
-                          fontSize: '0.8rem',
-                          px: 2,
-                          py: 0.75,
-                          bgcolor: alpha('#FF6B35', 0.08),
-                          border: '1px solid',
-                          borderColor: alpha('#FF6B35', 0.2),
-                          borderRadius: 2,
-                          '&:hover': {
-                            bgcolor: alpha('#FF6B35', 0.15),
-                            borderColor: '#FF6B35',
-                            transform: 'translateY(-2px)',
-                          },
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {translatedTerm}
-                      </Button>
-                    );
-                  })}
                 </Box>
               </Paper>
             </Grid>
 
-            {/* Right Side - हर सेवा उपलब्ध with Service Icons */}
+            {/* Right Side - All Services Info */}
             <Grid item xs={12} md={5}>
-              {/* Empty space for better alignment */}
               <Box sx={{ display: { xs: 'none', md: 'block' }, height: 20 }} />
               <Box
                 sx={{
                   position: 'relative',
                   borderRadius: 4,
                   overflow: 'hidden',
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                  boxShadow: mode === 'dark'
+                    ? '0 20px 60px rgba(0,0,0,0.8)'
+                    : '0 20px 60px rgba(0,0,0,0.3)',
                   height: '500px',
-                  background: 'linear-gradient(135deg, #FF8C61 0%, #FF6B35 100%)',
+                  background: mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.25) 100%)'
+                    : 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.2) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: mode === 'dark' 
+                    ? '1px solid rgba(59, 130, 246, 0.3)'
+                    : '1px solid rgba(59, 130, 246, 0.2)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  p: 3,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  p: 4,
+                  textAlign: 'center',
                 }}
               >
-                {/* Top - Worker Icon & Heading */}
-                <Box sx={{ textAlign: 'center', mt: 3 }}>
-                  <Typography
-                    sx={{
-                      fontSize: '6rem',
-                      mb: 1,
-                      filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.2))',
-                    }}
-                  >
-                    👨‍🔧
-                  </Typography>
-                  
-                  <Typography
-                    sx={{
-                      color: 'white',
-                      fontSize: '1.6rem',
-                      fontWeight: 800,
-                      textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                    }}
-                  >
-                    {language === 'hi' ? 'हर सेवा उपलब्ध' : 'All Services Available'}
-                  </Typography>
+                <Box
+                  sx={{
+                    fontSize: '5rem',
+                    mb: 3,
+                    filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.2))',
+                  }}
+                >
+                  🛠️
                 </Box>
+                
+                <Typography
+                  sx={{
+                    color: mode === 'dark' ? '#E2E8F0' : '#1E293B',
+                    fontSize: '2rem',
+                    fontWeight: 800,
+                    mb: 2,
+                    textShadow: mode === 'dark' 
+                      ? '0 2px 8px rgba(0,0,0,0.5)' 
+                      : '0 2px 8px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  {language === 'hi' ? 'सभी सेवाएं उपलब्ध' : 'All Services Available'}
+                </Typography>
 
-                {/* Service Icons Grid - 3x2 */}
-                <Box sx={{ pb: 2 }}>
-                  <Grid container spacing={1.5}>
-                    {[
-                      { icon: '🔧', labelKey: 'service.plumbing', searchTerm: 'Plumbing', color: '#5B8DEE' },
-                      { icon: '⚡', labelKey: 'service.electrical', searchTerm: 'Electrical', color: '#FF9F43' },
-                      { icon: '🧹', labelKey: 'service.cleaning', searchTerm: 'Cleaning', color: '#ED6A5A' },
-                      { icon: '🛠️', labelKey: 'service.carpentry', searchTerm: 'Carpentry', color: '#8B4513' },
-                      { icon: '❄️', labelKey: 'service.ac', searchTerm: 'AC Repair', color: '#4ECDC4' },
-                      { icon: '🎨', labelKey: 'service.painting', searchTerm: 'Painting', color: '#E056FD' },
-                    ].map((service, index) => (
-                      <Grid item xs={4} key={index}>
-                        <Box
-                          onClick={() => {
-                            setSearchQuery(service.searchTerm);
-                            navigate(`/services?q=${service.searchTerm}&location=${location}`);
-                          }}
-                          sx={{
-                            background: 'white',
-                            borderRadius: 3,
-                            p: 1.5,
-                            textAlign: 'center',
-                            transition: 'all 0.3s',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            '&:hover': {
-                              transform: 'translateY(-5px)',
-                              boxShadow: `0 8px 24px ${service.color}60`,
-                            },
-                          }}
-                        >
-                          <Typography sx={{ fontSize: '2rem', mb: 0.5 }}>
-                            {service.icon}
-                          </Typography>
-                          <Typography
-                            sx={{
-                              fontWeight: 700,
-                              color: service.color,
-                              fontSize: '0.7rem',
-                            }}
-                          >
-                            {t(service.labelKey)}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    ))}
-                  </Grid>
+                <Typography
+                  sx={{
+                    color: mode === 'dark' ? '#CBD5E0' : '#475569',
+                    fontSize: '1.1rem',
+                    fontWeight: 500,
+                    mb: 3,
+                    lineHeight: 1.6,
+                    maxWidth: '400px',
+                  }}
+                >
+                  {language === 'hi' 
+                    ? 'हमारे प्लेटफॉर्म पर कोई भी सेवा जोड़ी जा सकती है। डायनेमिक सेवा प्रणाली के साथ, आप किसी भी प्रकार की सेवा खोज और बुक कर सकते हैं।'
+                    : 'Any service can be added to our platform. With our dynamic service system, you can search and book any type of service you need.'
+                  }
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center', mt: 2 }}>
+                  {[
+                    { icon: '✓', text: language === 'hi' ? 'सभी प्रकार की सेवाएं' : 'All Types of Services' },
+                    { icon: '✓', text: language === 'hi' ? 'स्थान-आधारित खोज' : 'Location-Based Search' },
+                    { icon: '✓', text: language === 'hi' ? 'सत्यापित प्रदाता' : 'Verified Providers' },
+                  ].map((feature, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        bgcolor: mode === 'dark' 
+                          ? 'rgba(59, 130, 246, 0.2)' 
+                          : 'rgba(59, 130, 246, 0.1)',
+                        px: 2,
+                        py: 1,
+                        borderRadius: 2,
+                        border: mode === 'dark'
+                          ? '1px solid rgba(59, 130, 246, 0.3)'
+                          : '1px solid rgba(59, 130, 246, 0.2)',
+                      }}
+                    >
+                      <Typography sx={{ color: '#3B82F6', fontWeight: 700, fontSize: '1.2rem' }}>
+                        {feature.icon}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          color: mode === 'dark' ? '#E2E8F0' : '#1E293B',
+                          fontWeight: 600,
+                          fontSize: '0.9rem',
+                        }}
+                      >
+                        {feature.text}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
               </Box>
             </Grid>
@@ -658,26 +480,26 @@ const HomePage: React.FC = () => {
                       ? '0 8px 24px rgba(0,0,0,0.5)'
                       : '0 8px 24px rgba(0,0,0,0.15)',
                     border: mode === 'dark'
-                      ? '1px solid rgba(255,107,53,0.2)'
+                      ? '1px solid rgba(59, 130, 246, 0.2)'
                       : '1px solid rgba(255,255,255,0.3)',
                     transition: 'all 0.3s',
                     '&:hover': {
                       transform: 'translateY(-5px)',
                       boxShadow: mode === 'dark'
-                        ? '0 12px 32px rgba(255,107,53,0.5)'
-                        : '0 12px 32px rgba(255,107,53,0.3)',
+                        ? '0 12px 32px rgba(59, 130, 246, 0.5)'
+                        : '0 12px 32px rgba(59, 130, 246, 0.3)',
                     },
                   }}
                 >
                   {statsLoading ? (
-                    <CircularProgress size={40} sx={{ color: '#FF6B35' }} />
+                    <CircularProgress size={40} sx={{ color: '#3B82F6' }} />
                   ) : (
                     <>
                       <Typography 
                         variant="h4" 
                         sx={{ 
                           fontWeight: 900, 
-                          color: '#FF6B35', 
+                          color: '#3B82F6', 
                           mb: 0.5 
                         }}
                       >
@@ -701,8 +523,153 @@ const HomePage: React.FC = () => {
         </Container>
       </Box>
 
-      {/* Categories */}
-      <CategoryGrid />
+      {/* All Services Section */}
+      <Box sx={{ 
+        py: 10,
+        background: mode === 'dark' 
+          ? 'linear-gradient(180deg, #0F172A 0%, #1E293B 100%)'
+          : 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
+      }}>
+        <Container maxWidth="lg">
+          <Box sx={{ textAlign: 'center', mb: 6 }}>
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 800,
+                mb: 2,
+                background: mode === 'dark'
+                  ? 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)'
+                  : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              {language === 'hi' ? 'सभी सेवाएं एक जगह' : 'All Services in One Place'}
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                color: mode === 'dark' ? '#CBD5E0' : '#64748B',
+                fontWeight: 400,
+                maxWidth: '700px',
+                mx: 'auto',
+                lineHeight: 1.7,
+              }}
+            >
+              {language === 'hi'
+                ? 'हमारा प्लेटफॉर्म डायनेमिक है - कोई भी सेवा जोड़ी जा सकती है। प्लंबिंग से लेकर कंप्यूटर रिपेयर तक, हमारे पास आपकी सभी जरूरतों के लिए सेवाएं हैं।'
+                : 'Our platform is dynamic - any service can be added. From plumbing to computer repair, we have services for all your needs.'
+              }
+            </Typography>
+          </Box>
+
+          <Grid container spacing={4}>
+            {[
+              {
+                title: language === 'hi' ? 'डायनेमिक सेवा प्रणाली' : 'Dynamic Service System',
+                description: language === 'hi'
+                  ? 'कोई भी सेवा जोड़ी जा सकती है, कोई सीमा नहीं'
+                  : 'Any service can be added, no limitations',
+                icon: '🔄',
+              },
+              {
+                title: language === 'hi' ? 'स्थान-आधारित खोज' : 'Location-Based Search',
+                description: language === 'hi'
+                  ? 'GPS, पिनकोड या शहर के आधार पर खोजें'
+                  : 'Search by GPS, pincode, or city',
+                icon: '📍',
+              },
+              {
+                title: language === 'hi' ? 'सत्यापित प्रदाता' : 'Verified Providers',
+                description: language === 'hi'
+                  ? 'KYC-सत्यापित और रेटेड प्रदाता'
+                  : 'KYC-verified and rated providers',
+                icon: '✅',
+              },
+              {
+                title: language === 'hi' ? 'आसान बुकिंग' : 'Easy Booking',
+                description: language === 'hi'
+                  ? 'कॉल, WhatsApp या इन-ऐप चैट के माध्यम से'
+                  : 'Via call, WhatsApp, or in-app chat',
+                icon: '📞',
+              },
+            ].map((feature, index) => (
+              <Grid item xs={12} sm={6} md={3} key={index}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    height: '100%',
+                    p: 3,
+                    textAlign: 'center',
+                    bgcolor: mode === 'dark' ? '#1E293B' : 'white',
+                    border: mode === 'dark' 
+                      ? '1px solid #334155' 
+                      : '1px solid #E2E8F0',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: mode === 'dark'
+                        ? '0 12px 32px rgba(59, 130, 246, 0.3)'
+                        : '0 12px 32px rgba(59, 130, 246, 0.15)',
+                      borderColor: '#3B82F6',
+                    },
+                  }}
+                >
+                  <Typography sx={{ fontSize: '3rem', mb: 2 }}>
+                    {feature.icon}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      mb: 1,
+                      color: mode === 'dark' ? '#E2E8F0' : '#1E293B',
+                    }}
+                  >
+                    {feature.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: mode === 'dark' ? '#94A3B8' : '#64748B',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {feature.description}
+                  </Typography>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Box sx={{ textAlign: 'center', mt: 6 }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/services')}
+              sx={{
+                bgcolor: '#3B82F6',
+                color: 'white',
+                px: 4,
+                py: 1.5,
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                borderRadius: 3,
+                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+                '&:hover': {
+                  bgcolor: '#2563EB',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 32px rgba(59, 130, 246, 0.5)',
+                },
+                transition: 'all 0.3s',
+              }}
+            >
+              {language === 'hi' ? 'सभी सेवाएं देखें' : 'Explore All Services'}
+            </Button>
+          </Box>
+        </Container>
+      </Box>
 
       {/* How It Works */}
       <HowItWorks />
@@ -712,11 +679,11 @@ const HomePage: React.FC = () => {
 
       {/* Footer */}
       <Box sx={{ 
-        bgcolor: mode === 'dark' ? '#0A0E27' : '#1e272e', 
+        bgcolor: mode === 'dark' ? '#0F172A' : '#1E293B', 
         color: mode === 'dark' ? '#CBD5E0' : 'white', 
         py: 6, 
         mt: 8,
-        borderTop: mode === 'dark' ? '1px solid #2D3748' : 'none',
+        borderTop: mode === 'dark' ? '1px solid #334155' : 'none',
       }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
@@ -732,10 +699,10 @@ const HomePage: React.FC = () => {
                   }}
                 >
                   <Box component="span" sx={{ color: mode === 'dark' ? '#E2E8F0' : 'white' }}>
-                    Bihar
+                    QuickSeva
                   </Box>
-                  <Box component="span" sx={{ color: '#FF6B35' }}>
-                    Seva
+                  <Box component="span" sx={{ color: '#3B82F6' }}>
+                    {' '}Bihar
                   </Box>
                 </Typography>
                 <Typography
@@ -789,7 +756,7 @@ const HomePage: React.FC = () => {
                   mb: 1,
                   opacity: 0.9,
                   cursor: 'pointer',
-                  '&:hover': { color: '#FF6B35' },
+                  '&:hover': { color: '#3B82F6' },
                 }}
                 onClick={() => navigate('/about')}
               >
@@ -801,7 +768,7 @@ const HomePage: React.FC = () => {
                   mb: 1,
                   opacity: 0.9,
                   cursor: 'pointer',
-                  '&:hover': { color: '#FF6B35' },
+                  '&:hover': { color: '#3B82F6' },
                 }}
               >
                 {t('footer.careers')}
@@ -817,7 +784,7 @@ const HomePage: React.FC = () => {
                   mb: 1,
                   opacity: 0.9,
                   cursor: 'pointer',
-                  '&:hover': { color: '#FF6B35' },
+                  '&:hover': { color: '#3B82F6' },
                 }}
                 onClick={() => navigate('/services')}
               >
@@ -829,7 +796,7 @@ const HomePage: React.FC = () => {
                   mb: 1,
                   opacity: 0.9,
                   cursor: 'pointer',
-                  '&:hover': { color: '#FF6B35' },
+                  '&:hover': { color: '#3B82F6' },
                 }}
               >
                 {t('footer.howItWorks')}
@@ -845,7 +812,7 @@ const HomePage: React.FC = () => {
                   mb: 1,
                   opacity: 0.9,
                   cursor: 'pointer',
-                  '&:hover': { color: '#FF6B35' },
+                  '&:hover': { color: '#3B82F6' },
                 }}
                 onClick={() => navigate('/register')}
               >
@@ -868,7 +835,7 @@ const HomePage: React.FC = () => {
                   mb: 1,
                   opacity: 0.9,
                   cursor: 'pointer',
-                  '&:hover': { color: '#FF6B35' },
+                  '&:hover': { color: '#3B82F6' },
                 }}
                 onClick={() => navigate('/contact')}
               >
@@ -879,7 +846,7 @@ const HomePage: React.FC = () => {
             <Box
               sx={{
                 borderTop: mode === 'dark' 
-                  ? '1px solid #2D3748' 
+                  ? '1px solid #334155' 
                   : '1px solid rgba(255,255,255,0.1)',
                 mt: 4,
                 pt: 4,

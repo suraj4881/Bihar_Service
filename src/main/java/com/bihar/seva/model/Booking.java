@@ -24,9 +24,11 @@ public class Booking {
     @Indexed
     private String providerId;
     
-    @NotBlank(message = "Service is required")
-    private String service;
+    @NotBlank(message = "Service ID is required")
+    @Indexed
+    private String serviceId; // Reference to DynamicService ID
     
+    private String service; // Legacy field - kept for backward compatibility
     private String serviceName; // Display name for the service
     private String serviceCategory; // Category like "Plumbing", "Electrical"
     

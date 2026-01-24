@@ -37,7 +37,6 @@ const FeaturedProviders: React.FC = () => {
         setProviders(data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching providers:', error);
     } finally {
       setLoading(false);
     }

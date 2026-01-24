@@ -38,6 +38,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/providers/**").permitAll()
                 .antMatchers("/api/bookings/**").permitAll()
                 .antMatchers("/api/kyc/**").permitAll()
+                .antMatchers("/uploads/**").permitAll()
                 .anyRequest().permitAll()
             .and()
             .httpBasic().disable()

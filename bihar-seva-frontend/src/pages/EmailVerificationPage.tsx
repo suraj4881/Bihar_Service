@@ -12,6 +12,7 @@ import {
 import { Email, CheckCircle, ArrowBack } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import AppBar from '../components/AppBar';
 import Logo from '../components/Logo';
 
 const EmailVerificationPage: React.FC = () => {

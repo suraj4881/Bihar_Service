@@ -6,8 +6,6 @@ import {
   Grid,
   Card,
   CardContent,
-  AppBar,
-  Toolbar,
   IconButton,
   Avatar,
   Paper,
@@ -24,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import Logo from '../components/Logo';
+import AppBar from '../components/AppBar';
 
 const AboutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -79,15 +77,7 @@ const AboutPage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#FAFAFA' }}>
       {/* Navigation */}
-      <AppBar position="sticky" sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Logo size="small" showText onClick={() => navigate('/')} />
-          <Box sx={{ flexGrow: 1 }} />
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="default" position="sticky" showNavLinks={true} showAuthButtons={true} />
 
       {/* Hero Section */}
       <Box
@@ -99,7 +89,7 @@ const AboutPage: React.FC = () => {
       >
         <Container maxWidth="lg">
           <Typography variant="h2" align="center" gutterBottom sx={{ fontWeight: 800 }}>
-            About BiharSeva
+            About QuickSeva Bihar
           </Typography>
           <Typography variant="h6" align="center" sx={{ opacity: 0.95, maxWidth: '800px', mx: 'auto' }}>
             Bihar's Most Trusted Home Service Platform
@@ -116,7 +106,7 @@ const AboutPage: React.FC = () => {
             Our Mission
           </Typography>
           <Typography variant="body1" paragraph sx={{ fontSize: '1.1rem', lineHeight: 1.8 }}>
-            At BiharSeva, we are on a mission to revolutionize the home services industry in Bihar. We believe that
+            At QuickSeva Bihar, we are on a mission to revolutionize the home services industry in Bihar. We believe that
             finding reliable, skilled professionals for your home shouldn't be a hassle. Our platform connects
             homeowners with verified service providers, ensuring quality, transparency, and trust in every interaction.
           </Typography>
@@ -128,7 +118,7 @@ const AboutPage: React.FC = () => {
 
         {/* Features */}
         <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 700, mb: 4 }}>
-          Why Choose BiharSeva?
+          Why Choose QuickSeva Bihar?
         </Typography>
         <Grid container spacing={4} sx={{ mb: 8 }}>
           {features.map((feature, index) => (
@@ -230,7 +220,7 @@ const AboutPage: React.FC = () => {
           <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.8 }}>
             We envision a Bihar where every household has instant access to reliable, affordable, and quality home
             services. A platform where skilled professionals thrive, customers are delighted, and the community grows
-            together. BiharSeva is more than a service platform – it's a movement to digitize and organize the
+            together. QuickSeva Bihar is more than a service platform – it's a movement to digitize and organize the
             unorganized service sector, bringing dignity and prosperity to local service professionals.
           </Typography>
         </Card>

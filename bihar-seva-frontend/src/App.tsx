@@ -15,6 +15,7 @@ import ServiceDetailPage from './pages/ServiceDetailPage';
 import BookingPage from './pages/BookingPage';
 import ProfilePage from './pages/ProfilePage';
 import ProviderDashboard from './pages/ProviderDashboard';
+import ProviderDetailPage from './pages/ProviderDetailPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
 import EmailOTPPage from './pages/EmailOTPPage';
@@ -60,6 +61,10 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  
+                  {/* Public Search Route */}
+                  <Route path="/search" element={<ServiceSearchPage />} />
+                  <Route path="/provider/:id" element={<ProviderDetailPage />} />
                   
                   {/* Protected Routes - Require Login */}
                   <Route 

@@ -1,10 +1,9 @@
 package com.bihar.seva.service;
 
 import com.bihar.seva.repositories.UserRepository;
-import com.bihar.seva.repositories.ProviderRepository;
 import com.bihar.seva.repositories.BookingRepository;
 import com.bihar.seva.repositories.ReviewRepository;
-import com.bihar.seva.repositories.ServiceCategoryRepository;
+import com.bihar.seva.repositories.DynamicServiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,23 +17,28 @@ import java.util.Map;
 public class StatsService {
     
     private final UserRepository userRepository;
-    private final ProviderRepository providerRepository;
     private final BookingRepository bookingRepository;
     private final ReviewRepository reviewRepository;
-    private final ServiceCategoryRepository serviceCategoryRepository;
+    private final DynamicServiceRepository dynamicServiceRepository;
     
     public Map<String, Object> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
         
         try {
-            // Count total providers
-            long totalProviders = providerRepository.count();
+            // Count total providers (users with PROVIDER role)
+            long totalProviders = userRepository.findAll().stream()
+                .filter(u -> "PROVIDER".equals(u.getRole()))
+                .count();
             
             // Count verified providers
-            long verifiedProviders = providerRepository.countByIsVerified(true);
+            long verifiedProviders = userRepository.findAll().stream()
+                .filter(u -> "PROVIDER".equals(u.getRole()) && u.isVerified())
+                .count();
             
-            // Count total customers (users who are not providers)
-            long totalCustomers = userRepository.count();
+            // Count total customers (users with CUSTOMER role)
+            long totalCustomers = userRepository.findAll().stream()
+                .filter(u -> "CUSTOMER".equals(u.getRole()))
+                .count();
             
             // Count total bookings
             long totalBookings = bookingRepository.count();
@@ -42,8 +46,12 @@ public class StatsService {
             // Count completed bookings
             long completedBookings = bookingRepository.countByStatus("COMPLETED");
             
-            // Count service categories
-            long totalCategories = serviceCategoryRepository.count();
+            // Count service categories (from dynamic services)
+            long totalCategories = dynamicServiceRepository.findAll().stream()
+                .map(com.bihar.seva.model.DynamicService::getCategory)
+                .filter(cat -> cat != null && !cat.isEmpty())
+                .distinct()
+                .count();
             
             // Calculate average rating
             Double averageRating = reviewRepository.getAverageRating();
@@ -82,7 +90,8 @@ public class StatsService {
         
         try {
             // Additional admin-specific stats
-            long pendingKYC = providerRepository.countByKycStatus("PENDING");
+            // Pending KYC is now handled via separate collections (Aadhaar, PAN, Selfie)
+            long pendingKYC = 0; // TODO: Calculate from KYC collections
             long pendingBookings = bookingRepository.countByStatus("PENDING");
             long activeBookings = bookingRepository.countByStatus("IN_PROGRESS");
             long todayBookings = bookingRepository.countTodayBookings();

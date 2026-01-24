@@ -65,7 +65,7 @@ public class EmailService {
      * Send OTP email with nice formatting
      */
     public void sendOTPEmail(String to, String otp) {
-        String subject = "BiharSeva - Your OTP Code";
+        String subject = "QuickSeva Bihar - Your OTP Code";
         
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>");
@@ -85,11 +85,11 @@ public class EmailService {
         html.append("<div class='container'>");
         html.append("<div class='content'>");
         html.append("<div class='header'>");
-        html.append("<h1>🔐 BiharSeva</h1>");
+        html.append("<h1>🔐 QuickSeva Bihar</h1>");
         html.append("<p>Email Verification</p>");
         html.append("</div>");
         html.append("<p>Hello!</p>");
-        html.append("<p>Thank you for using BiharSeva. Your One-Time Password (OTP) is:</p>");
+        html.append("<p>Thank you for using QuickSeva Bihar. Your One-Time Password (OTP) is:</p>");
         html.append("<div class='otp-box'>").append(otp).append("</div>");
         html.append("<div class='info'>");
         html.append("⚠️ <strong>Important:</strong>");
@@ -101,7 +101,7 @@ public class EmailService {
         html.append("</div>");
         html.append("<p>Enter this OTP on the verification page to complete your registration/login.</p>");
         html.append("<div class='footer'>");
-        html.append("<p>© 2024 BiharSeva. All rights reserved.</p>");
+        html.append("<p>© 2024 QuickSeva Bihar. All rights reserved.</p>");
         html.append("<p>This is an automated email. Please do not reply.</p>");
         html.append("</div>");
         html.append("</div>");

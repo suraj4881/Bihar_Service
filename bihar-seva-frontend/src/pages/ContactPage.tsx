@@ -8,8 +8,6 @@ import {
   CardContent,
   TextField,
   Button,
-  AppBar,
-  Toolbar,
   IconButton,
   Paper,
   Alert,
@@ -27,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import Logo from '../components/Logo';
+import AppBar from '../components/AppBar';
 
 const ContactPage: React.FC = () => {
   const navigate = useNavigate();
@@ -83,7 +81,7 @@ const ContactPage: React.FC = () => {
     {
       icon: <Email sx={{ fontSize: 40, color: '#2196F3' }} />,
       title: 'Email',
-      details: ['support@biharseva.com', 'info@biharseva.com'],
+      details: ['support@quicksevabihar.com', 'info@quicksevabihar.com'],
       action: 'Email Us',
     },
     {
@@ -103,15 +101,7 @@ const ContactPage: React.FC = () => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#FAFAFA' }}>
       {/* Navigation */}
-      <AppBar position="sticky" sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Logo size="small" showText onClick={() => navigate('/')} />
-          <Box sx={{ flexGrow: 1 }} />
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="default" position="sticky" showNavLinks={true} showAuthButtons={true} />
 
       {/* Hero Section */}
       <Box
@@ -341,7 +331,7 @@ const ContactPage: React.FC = () => {
                 Are all providers verified?
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
-                Yes! All service providers on BiharSeva go through a rigorous background verification and certification
+                Yes! All service providers on QuickSeva Bihar go through a rigorous background verification and certification
                 process.
               </Typography>
             </Grid>

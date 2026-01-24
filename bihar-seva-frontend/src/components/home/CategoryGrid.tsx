@@ -25,8 +25,8 @@ const CategoryGrid: React.FC = () => {
     <Box sx={{ 
       py: 8, 
       background: isDark 
-        ? 'linear-gradient(180deg, #1A1F3A 0%, #0A0E27 100%)'
-        : 'linear-gradient(180deg, #FFF5EB 0%, #FFE5D0 100%)',
+        ? 'linear-gradient(180deg, #0F172A 0%, #1E293B 100%)'
+        : 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
     }}>
       <Container maxWidth="lg">
         <Typography
@@ -59,13 +59,13 @@ const CategoryGrid: React.FC = () => {
                 sx={{
                   height: '100%',
                   transition: 'all 0.3s ease-in-out',
-                  bgcolor: isDark ? '#1A1F3A' : 'white',
-                  border: isDark ? '1px solid #2D3748' : '1px solid #E0E0E0',
+                  bgcolor: isDark ? '#1E293B' : 'white',
+                  border: isDark ? '1px solid #334155' : '1px solid #E2E8F0',
                   '&:hover': {
                     transform: 'translateY(-8px)',
                     boxShadow: isDark 
-                      ? '0 8px 24px rgba(255,107,53,0.3)'
-                      : '0 8px 24px rgba(0,0,0,0.12)',
+                      ? '0 8px 24px rgba(59, 130, 246, 0.3)'
+                      : '0 8px 24px rgba(59, 130, 246, 0.15)',
                     borderColor: category.color,
                   },
                 }}

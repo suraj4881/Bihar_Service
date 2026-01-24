@@ -37,6 +37,10 @@ public class User {
     private String pincode;
     private String profilePhoto;
     
+    // Location - GPS coordinates for location-based search
+    private Double latitude;  // GPS latitude
+    private Double longitude; // GPS longitude
+    
     // ✅ Account Status
     private boolean isActive = true;        // Account enabled/disabled (can login or not)
     private boolean isVerified = false;     // Email verified or not
@@ -44,6 +48,27 @@ public class User {
     // ✅ Online Status (NEW)
     private boolean isOnline = false;       // Currently logged in or not
     private LocalDateTime lastSeen;         // Last activity timestamp
+    
+    // Explicit getters with @JsonProperty to ensure correct JSON field names
+    // Lombok generates isActive() but Jackson might serialize as "active", so we force "isActive"
+    @com.fasterxml.jackson.annotation.JsonGetter("isActive")
+    public boolean getIsActive() {
+        return this.isActive;
+    }
+    
+    @com.fasterxml.jackson.annotation.JsonGetter("isVerified")
+    public boolean getIsVerified() {
+        return this.isVerified;
+    }
+    
+    // Explicit boolean getter methods (Lombok should generate these, but adding explicitly for compatibility)
+    public boolean isActive() {
+        return this.isActive;
+    }
+    
+    public boolean isVerified() {
+        return this.isVerified;
+    }
     
     private String verificationCode;
     private LocalDateTime createdAt = LocalDateTime.now();

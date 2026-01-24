@@ -22,15 +22,17 @@ import {
   VisibilityOff,
   Email,
   Lock,
-  Phone,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useThemeMode } from '../contexts/ThemeContext';
 import Logo from '../components/Logo';
+import AppBar from '../components/AppBar';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
+  const { mode } = useThemeMode();
   
   // ✅ Sync language on mount from localStorage (set on HomePage)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,29 +121,24 @@ const LoginPage: React.FC = () => {
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('role', userRole);
         
-        // ✅ Sync language preference - Priority: localStorage (from HomePage) > User profile > sessionStorage > Default
+        // Sync language preference - Priority: localStorage (from HomePage) > User profile > sessionStorage > Default
         let savedLanguage = localStorage.getItem('language');
-        console.log('🔍 LoginPage: Checking language - localStorage:', savedLanguage, 'userData.language:', userData.language);
         
-        // ✅ Check sessionStorage backup if localStorage is missing
+        // Check sessionStorage backup if localStorage is missing
         if (!savedLanguage || (savedLanguage !== 'hi' && savedLanguage !== 'en')) {
           try {
             const sessionLang = sessionStorage.getItem('language');
-            console.log('🔍 LoginPage: localStorage missing/invalid, checking sessionStorage:', sessionLang);
             if (sessionLang === 'hi' || sessionLang === 'en') {
               localStorage.setItem('language', sessionLang);
               savedLanguage = sessionLang;
-              console.log('✅ LoginPage: Restored language from sessionStorage:', sessionLang);
             }
           } catch (e) {
-            console.warn('⚠️ LoginPage: Could not read sessionStorage:', e);
+            // Ignore sessionStorage errors
           }
         }
         
         if (savedLanguage && (savedLanguage === 'hi' || savedLanguage === 'en')) {
-          // Priority 1: Keep existing language preference from HomePage (DON'T overwrite!)
-          console.log('✅ LoginPage: Language preference maintained from HomePage:', savedLanguage);
-          // DO NOT set it again - just keep what's already there
+          // Priority 1: Keep existing language preference from HomePage
         } else if (userData.language) {
           // Priority 2: User profile has language preference - use it
           const userLang = userData.language.toLowerCase();
@@ -149,18 +146,20 @@ const LoginPage: React.FC = () => {
           localStorage.setItem('language', langPreference);
           try {
             sessionStorage.setItem('language', langPreference);
-          } catch (e) {}
-          console.log('✅ LoginPage: Language synced from user profile:', langPreference);
+          } catch (e) {
+            // Ignore sessionStorage errors
+          }
         } else {
           // Priority 3: Only default to English if nothing is set
-          console.log('⚠️ LoginPage: No language found anywhere, defaulting to English');
           localStorage.setItem('language', 'en');
           try {
             sessionStorage.setItem('language', 'en');
-          } catch (e) {}
+          } catch (e) {
+            // Ignore sessionStorage errors
+          }
         }
         
-        // ✅ Check if user has password
+        // Check if user has password
         if (data.data.hasPassword !== undefined) {
           if (data.data.hasPassword) {
             localStorage.setItem('hasPassword', 'true');
@@ -169,33 +168,21 @@ const LoginPage: React.FC = () => {
           }
         }
 
-        // ✅ CRITICAL: Verify language is preserved before redirect
+        // Verify language is preserved before redirect
         const finalLanguage = localStorage.getItem('language');
-        console.log('🔍 LoginPage: Final language check before redirect:', finalLanguage);
         if (!finalLanguage || (finalLanguage !== 'hi' && finalLanguage !== 'en')) {
-          // If language was lost, restore from HomePage preference
           const homePageLang = localStorage.getItem('language') || 'en';
           localStorage.setItem('language', homePageLang);
-          console.log('⚠️ LoginPage: Language was missing, restored to:', homePageLang);
         }
         
-        // ✅ Role-based redirect
-        console.log('🔍 Login successful - Role:', userRole);
-        console.log('🔍 LoginPage: Language preserved for redirect:', localStorage.getItem('language'));
-        
+        // Role-based redirect
         let redirectPath = '/';
         if (userRole === 'ADMIN') {
-          console.log('→ Redirecting to Admin Dashboard');
           redirectPath = '/admin-dashboard';
         } else if (userRole === 'PROVIDER') {
-          console.log('→ Redirecting to Provider Dashboard');
           redirectPath = '/provider-dashboard';
         } else if (userRole === 'CUSTOMER') {
-          console.log('→ Redirecting to Customer Dashboard');
           redirectPath = '/customer-dashboard';
-        } else {
-          console.log('→ Redirecting to Homepage');
-          redirectPath = '/';
         }
         
         // ✅ Force full page reload to update AuthContext
@@ -227,7 +214,6 @@ const LoginPage: React.FC = () => {
 
   // ✅ Navigation handlers (memoized)
   const goToEmailOTP = useCallback(() => navigate('/email-otp'), [navigate]);
-  const goToPhoneOTP = useCallback(() => navigate('/phone-otp'), [navigate]);
   const goToRegister = useCallback(() => navigate('/register'), [navigate]);
   const goToHome = useCallback(() => navigate('/'), [navigate]);
 
@@ -236,30 +222,50 @@ const LoginPage: React.FC = () => {
     '& .MuiOutlinedInput-root': {
       borderRadius: 2,
       transition: 'all 0.3s',
+      bgcolor: mode === 'dark' ? '#1E293B' : '#F8FAFC',
       '&:hover fieldset': {
-        borderColor: '#667eea',
+        borderColor: '#3B82F6',
       },
       '&.Mui-focused fieldset': {
-        borderColor: '#667eea',
+        borderColor: '#3B82F6',
         borderWidth: 2,
       },
     },
     '& .MuiInputLabel-root.Mui-focused': {
-      color: '#667eea',
+      color: '#3B82F6',
     },
   };
 
   return (
+    <Box>
+      <AppBar />
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: mode === 'dark'
+          ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%)'
+          : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
         display: 'flex',
         alignItems: 'center',
         py: 4,
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: mode === 'dark'
+            ? `radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+               radial-gradient(circle at 80% 30%, rgba(96, 165, 250, 0.1) 0%, transparent 50%)`
+            : `radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+               radial-gradient(circle at 80% 30%, rgba(255,255,255,0.1) 0%, transparent 50%)`,
+        },
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
         <Grid container spacing={0} sx={{ minHeight: '600px' }}>
           {/* Left Panel - Branding */}
           <Grid
@@ -267,78 +273,118 @@ const LoginPage: React.FC = () => {
             xs={12}
             md={6}
             sx={{
-              background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+              background: mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.3) 100%)'
+                : 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.25) 100%)',
+              backdropFilter: 'blur(20px)',
+              border: mode === 'dark'
+                ? '1px solid rgba(59, 130, 246, 0.3)'
+                : '1px solid rgba(59, 130, 246, 0.2)',
               borderRadius: { xs: '16px 16px 0 0', md: '16px 0 0 16px' },
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
               alignItems: 'center',
               p: 6,
-              color: 'white',
+              color: mode === 'dark' ? '#E2E8F0' : 'white',
               textAlign: 'center',
             }}
           >
-            <Box onClick={goToHome} sx={{ cursor: 'pointer', mb: 4 }}>
+            <Box 
+              onClick={goToHome} 
+              sx={{ 
+                cursor: 'pointer', 
+                mb: 4,
+                transition: 'transform 0.3s',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
               <Logo size={80} />
             </Box>
-            <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 800, 
+                mb: 2,
+                background: mode === 'dark'
+                  ? 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)'
+                  : 'linear-gradient(135deg, #FFFFFF 0%, #E0E7FF 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
               {t('login.welcome')}
             </Typography>
-            <Typography variant="h6" sx={{ mb: 4, opacity: 0.95 }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 4, 
+                opacity: mode === 'dark' ? 0.9 : 0.95,
+                color: mode === 'dark' ? '#CBD5E0' : 'rgba(255,255,255,0.95)',
+                fontWeight: 400,
+              }}
+            >
               {t('login.subtitle')}
             </Typography>
-            <Box sx={{ width: '100%', maxWidth: 300 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mr: 2,
+            <Box sx={{ width: '100%', maxWidth: 320 }}>
+              {[
+                { key: 'trusted', icon: '✓' },
+                { key: 'secure', icon: '✓' },
+                { key: 'support', icon: '✓' },
+              ].map((item, index) => (
+                <Box 
+                  key={index}
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    mb: index < 2 ? 2.5 : 0,
+                    p: 1.5,
+                    borderRadius: 2,
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      bgcolor: mode === 'dark' 
+                        ? 'rgba(59, 130, 246, 0.2)' 
+                        : 'rgba(255,255,255,0.1)',
+                      transform: 'translateX(5px)',
+                    },
                   }}
                 >
-                  ✓
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '50%',
+                      bgcolor: mode === 'dark'
+                        ? 'rgba(59, 130, 246, 0.3)'
+                        : 'rgba(255,255,255,0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mr: 2,
+                      fontSize: '1.2rem',
+                      fontWeight: 700,
+                      color: mode === 'dark' ? '#60A5FA' : 'white',
+                      boxShadow: mode === 'dark'
+                        ? '0 4px 12px rgba(59, 130, 246, 0.3)'
+                        : '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    {item.icon}
+                  </Box>
+                  <Typography 
+                    sx={{ 
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      color: mode === 'dark' ? '#E2E8F0' : 'white',
+                    }}
+                  >
+                    {t(`login.${item.key}`)}
+                  </Typography>
                 </Box>
-                <Typography>{t('login.trusted')}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mr: 2,
-                  }}
-                >
-                  ✓
-                </Box>
-                <Typography>{t('login.secure')}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    bgcolor: 'rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    mr: 2,
-                  }}
-                >
-                  ✓
-                </Box>
-                <Typography>{t('login.support')}</Typography>
-              </Box>
+              ))}
             </Box>
           </Grid>
 
@@ -348,14 +394,34 @@ const LoginPage: React.FC = () => {
               sx={{
                 height: '100%',
                 borderRadius: { xs: '0 0 16px 16px', md: '0 16px 16px 0' },
-                boxShadow: 'none',
+                bgcolor: mode === 'dark' ? '#1E293B' : 'white',
+                border: mode === 'dark' 
+                  ? '1px solid #334155' 
+                  : '1px solid rgba(0,0,0,0.05)',
+                boxShadow: mode === 'dark'
+                  ? '0 20px 60px rgba(0,0,0,0.8)'
+                  : '0 20px 60px rgba(0,0,0,0.15)',
               }}
             >
-              <CardContent sx={{ p: 6, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#1a1a1a' }}>
+              <CardContent sx={{ p: { xs: 4, sm: 6 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Typography 
+                  variant="h4" 
+                  sx={{ 
+                    fontWeight: 800, 
+                    mb: 1,
+                    color: mode === 'dark' ? '#E2E8F0' : '#1E293B',
+                  }}
+                >
                   {t('login.title')}
                 </Typography>
-                <Typography variant="body2" sx={{ mb: 4, color: '#666' }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    mb: 4, 
+                    color: mode === 'dark' ? '#94A3B8' : '#64748B',
+                    fontWeight: 400,
+                  }}
+                >
                   {t('login.subtitle')}
                 </Typography>
 
@@ -377,7 +443,7 @@ const LoginPage: React.FC = () => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: '#667eea' }} />
+                          <Email sx={{ color: '#3B82F6' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -394,7 +460,7 @@ const LoginPage: React.FC = () => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: '#667eea' }} />
+                          <Lock sx={{ color: '#3B82F6' }} />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -415,12 +481,23 @@ const LoginPage: React.FC = () => {
                           checked={rememberMe}
                           onChange={handleRememberMeChange}
                           disabled={loading}
-                          sx={{ color: '#667eea', '&.Mui-checked': { color: '#667eea' } }}
+                          sx={{ color: '#3B82F6', '&.Mui-checked': { color: '#3B82F6' } }}
                         />
                       }
                       label={<Typography variant="body2">{t('login.remember')}</Typography>}
                     />
-                    <Link href="#" underline="hover" sx={{ fontSize: '0.875rem', color: '#667eea' }}>
+                    <Link 
+                      href="#" 
+                      underline="hover" 
+                      sx={{ 
+                        fontSize: '0.875rem', 
+                        color: '#3B82F6',
+                        fontWeight: 600,
+                        '&:hover': {
+                          color: '#2563EB',
+                        },
+                      }}
+                    >
                       {t('login.forgot')}
                     </Link>
                   </Box>
@@ -432,19 +509,24 @@ const LoginPage: React.FC = () => {
                     onClick={handleSubmit}
                     disabled={loading}
                     sx={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
                       color: 'white',
-                      py: 1.5,
+                      py: 1.75,
                       borderRadius: 2,
                       textTransform: 'none',
-                      fontSize: '1rem',
-                      fontWeight: 600,
+                      fontSize: '1.05rem',
+                      fontWeight: 700,
                       mb: 3,
+                      boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+                      transition: 'all 0.3s',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+                        background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 12px 32px rgba(59, 130, 246, 0.5)',
                       },
                       '&:disabled': {
-                        background: '#ccc',
+                        background: mode === 'dark' ? '#475569' : '#CBD5E0',
+                        boxShadow: 'none',
                       },
                     }}
                   >
@@ -452,13 +534,14 @@ const LoginPage: React.FC = () => {
                   </Button>
                 </Box>
 
+                {/* OTP Feature - Disabled for now. Enable when OTP feature is ready */}
+                {/* 
                 <Divider sx={{ my: 3 }}>
                   <Typography variant="body2" sx={{ color: '#999', px: 2 }}>
                     {t('login.or')}
                   </Typography>
                 </Divider>
 
-                {/* Alternative Login Methods */}
                 <Button
                   fullWidth
                   variant="outlined"
@@ -474,7 +557,7 @@ const LoginPage: React.FC = () => {
                     textTransform: 'none',
                     fontSize: '0.95rem',
                     fontWeight: 600,
-                    mb: 2,
+                    mb: 3,
                     '&:hover': {
                       borderColor: '#5568d3',
                       bgcolor: 'rgba(102, 126, 234, 0.04)',
@@ -483,41 +566,30 @@ const LoginPage: React.FC = () => {
                 >
                   {t('login.emailOtp')}
                 </Button>
-
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  size="large"
-                  onClick={goToPhoneOTP}
-                  disabled={loading}
-                  startIcon={<Phone />}
-                  sx={{
-                    borderColor: '#667eea',
-                    color: '#667eea',
-                    py: 1.5,
-                    borderRadius: 2,
-                    textTransform: 'none',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    mb: 3,
-                    '&:hover': {
-                      borderColor: '#5568d3',
-                      bgcolor: 'rgba(102, 126, 234, 0.04)',
-                    },
-                  }}
-                >
-                  {t('login.phoneOtp')}
-                </Button>
+                */}
 
                 {/* Register Link */}
                 <Box sx={{ textAlign: 'center', mt: 'auto' }}>
-                  <Typography variant="body2" sx={{ color: '#666' }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: mode === 'dark' ? '#94A3B8' : '#64748B',
+                      fontWeight: 400,
+                    }}
+                  >
                     {t('login.noAccount')}{' '}
                     <Link
                       component="button"
                       onClick={goToRegister}
                       underline="hover"
-                      sx={{ color: '#667eea', fontWeight: 600, cursor: 'pointer' }}
+                      sx={{ 
+                        color: '#3B82F6', 
+                        fontWeight: 700, 
+                        cursor: 'pointer',
+                        '&:hover': {
+                          color: '#2563EB',
+                        },
+                      }}
                     >
                       {t('login.signup')}
                     </Link>
@@ -528,6 +600,7 @@ const LoginPage: React.FC = () => {
           </Grid>
         </Grid>
       </Container>
+    </Box>
     </Box>
   );
 };

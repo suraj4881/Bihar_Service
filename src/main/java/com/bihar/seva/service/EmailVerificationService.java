@@ -40,7 +40,7 @@ public class EmailVerificationService {
             userRepository.save(user);
             
             // Send email
-            String subject = "Verify Your BiharSeva Account";
+            String subject = "Verify Your QuickSeva Bihar Account";
             String body = buildVerificationEmailBody(user.getName(), verificationCode);
             
             emailService.sendHtmlEmail(user.getEmail(), subject, body);
@@ -132,20 +132,20 @@ public class EmailVerificationService {
                 "<body>" +
                 "<div class='container'>" +
                 "<div class='header'>" +
-                "<h1>🎉 Welcome to BiharSeva!</h1>" +
+                "<h1>🎉 Welcome to QuickSeva Bihar!</h1>" +
                 "</div>" +
                 "<div class='content'>" +
                 "<p>Hello <strong>" + userName + "</strong>,</p>" +
-                "<p>Thank you for registering with BiharSeva! Please verify your email address to complete your registration.</p>" +
+                "<p>Thank you for registering with QuickSeva Bihar! Please verify your email address to complete your registration.</p>" +
                 "<p><strong>Your verification code is:</strong></p>" +
                 "<div class='code-box'>" +
                 "<div class='code'>" + code + "</div>" +
                 "</div>" +
                 "<p>Enter this code on the verification page to activate your account.</p>" +
                 "<p><strong>⏰ This code will expire in 10 minutes.</strong></p>" +
-                "<p>If you didn't create an account with BiharSeva, please ignore this email.</p>" +
+                "<p>If you didn't create an account with QuickSeva Bihar, please ignore this email.</p>" +
                 "<div class='footer'>" +
-                "<p>© 2024 BiharSeva - Service Marketplace</p>" +
+                "<p>© 2024 QuickSeva Bihar - Service Marketplace</p>" +
                 "<p>This is an automated email. Please do not reply.</p>" +
                 "</div>" +
                 "</div>" +
