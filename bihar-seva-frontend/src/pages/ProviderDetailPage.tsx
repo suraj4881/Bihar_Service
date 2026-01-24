@@ -11,8 +11,6 @@ import {
   Rating,
   Chip,
   Divider,
-  AppBar,
-  Toolbar,
   IconButton,
   Paper,
   List,
@@ -36,7 +34,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import Logo from '../components/Logo';
+import { useAuth } from '../contexts/AuthContext';
+import AppBar from '../components/AppBar';
 import StatusBadge from '../components/StatusBadge';
 
 interface Provider {
@@ -49,11 +48,14 @@ interface Provider {
   price: number;
   isVerified: boolean;
   profilePhoto?: string;
-  experience: number;
+  experience?: number;
+  expertiseLevel?: string;
   about?: string;
   services?: string[];
   workingHours?: string;
   languages?: string[];
+  serviceImages?: string[];
+  serviceArea?: string;
 }
 
 interface Review {
@@ -69,6 +71,7 @@ const ProviderDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { language, setLanguage, t } = useLanguage();
+  const { user } = useAuth();
   
   // ✅ Sync language on mount from localStorage
   useEffect(() => {
@@ -84,81 +87,134 @@ const ProviderDetailPage: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
+  const [hasConfirmedBooking, setHasConfirmedBooking] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [callLoading, setCallLoading] = useState(false);
+  const [callError, setCallError] = useState('');
+  const [serviceProviderId, setServiceProviderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProviderDetails();
   }, [id]);
 
+  useEffect(() => {
+    if (user?.id && id && serviceProviderId) {
+      fetchBookingAccess(user.id, serviceProviderId, id);
+    }
+  }, [user?.id, id, serviceProviderId]);
+
   const fetchProviderDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/providers/${id}`);
-      const data = await response.json();
-      if (data.success) {
-        setProvider(data.data);
+      const serviceResponse = await fetch(`http://localhost:8080/api/services/${id}`);
+      const serviceData = await serviceResponse.json();
+      if (!serviceData.success || !serviceData.data) {
+        setProvider(null);
+        setReviews([]);
+        return;
       }
+
+      const service = serviceData.data;
+      setServiceProviderId(service.providerId || null);
+      let userData: any = null;
+      if (service.providerId) {
+        const userResponse = await fetch(`http://localhost:8080/api/users/${service.providerId}`);
+        const userPayload = await userResponse.json();
+        if (userPayload.success) {
+          userData = userPayload.data;
+        }
+      }
+
+      const resolveImageUrl = (path?: string) => {
+        if (!path) return undefined;
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+          return path;
+        }
+        return `http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(path)}`;
+      };
+
+      const mappedProvider: Provider = {
+        id: service.id,
+        name: userData?.name || service.providerName || 'Provider',
+        skill: service.serviceName || service.category || 'Service',
+        rating: service.averageRating || 0,
+        totalReviews: service.totalReviews || 0,
+        city: service.city || userData?.city || 'N/A',
+        price: service.finalPrice || service.basePrice || service.price || 0,
+        isVerified: Boolean(service.isApproved || userData?.isVerified),
+        profilePhoto: resolveImageUrl(userData?.profilePhoto),
+        experience: userData?.experience,
+        about: service.description,
+        services: service.tags || [],
+        workingHours: service.availableFrom && service.availableTo
+          ? `${service.availableFrom} - ${service.availableTo}`
+          : undefined,
+        languages: userData?.language ? [userData.language] : undefined,
+        serviceImages: service.serviceImages || [],
+        serviceArea: service.serviceArea || service.address,
+        expertiseLevel: service.expertiseLevel,
+      };
+
+      setProvider(mappedProvider);
     } catch (error) {
-      console.error('Error fetching provider:', error);
-      // Mock data
-      setProvider(mockProvider);
-      setReviews(mockReviews);
+      setProvider(null);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const mockProvider: Provider = {
-    id: '1',
-    name: 'Raj Kumar Sharma',
-    skill: 'Plumbing',
-    rating: 4.8,
-    totalReviews: 156,
-    city: 'Patna',
-    price: 650,
-    isVerified: true,
-    experience: 5,
-    about:
-      'Expert plumber with 5+ years of experience in residential and commercial plumbing. Specialized in pipe repairs, fixture installations, and bathroom fittings. Committed to providing quality service with customer satisfaction.',
-    services: [
-      'Pipe repair & replacement',
-      'Tap & fixture installation',
-      'Bathroom & kitchen fittings',
-      'Water heater installation',
-      'Drainage cleaning',
-      'Emergency plumbing services',
-    ],
-    workingHours: '9:00 AM - 6:00 PM (Mon-Sat)',
-    languages: ['Hindi', 'English'],
+  const fetchBookingAccess = async (userId: string, providerId: string, serviceId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/bookings/user/${userId}`);
+      const data = await response.json();
+      if (data.success && Array.isArray(data.data)) {
+        const allowedStatuses = new Set(['CONFIRMED', 'IN_PROGRESS', 'COMPLETED']);
+        const matched = data.data.find((booking: any) => (
+          booking.providerId === providerId &&
+          booking.serviceId === serviceId &&
+          allowedStatuses.has(booking.status)
+        ));
+        if (matched) {
+          setHasConfirmedBooking(true);
+          setBookingId(matched.id);
+          return;
+        }
+      }
+      setHasConfirmedBooking(false);
+      setBookingId(null);
+    } catch (error) {
+      setHasConfirmedBooking(false);
+      setBookingId(null);
+    }
   };
 
-  const mockReviews: Review[] = [
-    {
-      id: '1',
-      customerName: 'Rohit Kumar',
-      rating: 5,
-      comment:
-        'Excellent service! Very professional and completed the work on time. Highly recommended.',
-      date: '2 days ago',
-      helpful: 24,
-    },
-    {
-      id: '2',
-      customerName: 'Priya Singh',
-      rating: 4,
-      comment:
-        'Good work, came on time and fixed the leak quickly. Could improve communication.',
-      date: '1 week ago',
-      helpful: 12,
-    },
-    {
-      id: '3',
-      customerName: 'Amit Verma',
-      rating: 5,
-      comment:
-        'Best plumber I have found in Patna. Very skilled and reasonable pricing.',
-      date: '2 weeks ago',
-      helpful: 18,
-    },
-  ];
+  const handleMaskedCall = async () => {
+    if (!bookingId) {
+      setCallError('Please book and confirm first to enable calling.');
+      return;
+    }
+
+    setCallLoading(true);
+    setCallError('');
+    try {
+      const response = await fetch('http://localhost:8080/api/calls/masked', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId }),
+      });
+      const data = await response.json();
+      if (data.success && data.data?.proxyNumber) {
+        window.open(`tel:${data.data.proxyNumber}`, '_self');
+      } else {
+        setCallError(data.message || data.data?.message || 'Call proxy not configured.');
+      }
+    } catch (error: any) {
+      setCallError(error?.message || 'Unable to initiate masked call.');
+    } finally {
+      setCallLoading(false);
+    }
+  };
+
 
   if (loading) {
     return <Typography>Loading...</Typography>;
@@ -171,15 +227,7 @@ const ProviderDetailPage: React.FC = () => {
   return (
     <Box>
       {/* Navigation Bar */}
-      <AppBar position="sticky" sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate(-1)} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Logo size="small" showText onClick={() => navigate('/')} />
-          <Box sx={{ flexGrow: 1 }} />
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={4}>
@@ -228,14 +276,20 @@ const ProviderDetailPage: React.FC = () => {
                     <ListItemIcon>
                       <LocationOn />
                     </ListItemIcon>
-                    <ListItemText primary={provider.city} secondary="Location" />
+                    <ListItemText primary={provider.serviceArea || provider.city} secondary="Location" />
                   </ListItem>
                   <ListItem>
                     <ListItemIcon>
                       <WorkOutline />
                     </ListItemIcon>
                     <ListItemText
-                      primary={`${provider.experience} years`}
+                      primary={
+                        provider.experience
+                          ? `${provider.experience} years`
+                          : provider.expertiseLevel
+                            ? provider.expertiseLevel
+                            : 'N/A'
+                      }
                       secondary="Experience"
                     />
                   </ListItem>
@@ -261,6 +315,26 @@ const ProviderDetailPage: React.FC = () => {
 
                 <Divider sx={{ my: 2 }} />
 
+                {provider.serviceImages && provider.serviceImages.length > 0 && (
+                  <>
+                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                      Service Images
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                      {provider.serviceImages.map((image, index) => (
+                        <Box
+                          key={`${image}-${index}`}
+                          component="img"
+                          src={`http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(image)}`}
+                          alt={`Service ${index + 1}`}
+                          sx={{ width: 80, height: 80, borderRadius: 2, objectFit: 'cover' }}
+                        />
+                      ))}
+                    </Box>
+                    <Divider sx={{ my: 2 }} />
+                  </>
+                )}
+
                 <Typography variant="h6" color="primary" align="center" gutterBottom>
                   ₹{provider.price}+ per visit
                 </Typography>
@@ -284,17 +358,33 @@ const ProviderDetailPage: React.FC = () => {
                       fullWidth
                       variant="outlined"
                       startIcon={<Phone />}
-                      href={`tel:+919876543210`}
+                      disabled={!hasConfirmedBooking || callLoading}
+                      title={hasConfirmedBooking ? 'Call via masked number' : 'Book first to unlock calling'}
+                      onClick={handleMaskedCall}
                     >
-                      Call
+                      {callLoading ? 'Connecting...' : 'Call'}
                     </Button>
                   </Grid>
                   <Grid item xs={6}>
-                    <Button fullWidth variant="outlined" startIcon={<Chat />}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Chat />}
+                      disabled={!hasConfirmedBooking}
+                      title={hasConfirmedBooking ? 'Chat enabled' : 'Book first to unlock chat'}
+                    >
                       Chat
                     </Button>
                   </Grid>
                 </Grid>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+                  {hasConfirmedBooking ? 'Chat and call are now available.' : 'Book the service to unlock chat and call.'}
+                </Typography>
+                {callError && (
+                  <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5, textAlign: 'center' }}>
+                    {callError}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           </Grid>

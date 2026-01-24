@@ -2,10 +2,9 @@ package com.bihar.seva.service;
 
 import com.bihar.seva.dto.BookingRequestDTO;
 import com.bihar.seva.model.Booking;
-import com.bihar.seva.model.Provider;
 import com.bihar.seva.repositories.BookingRepository;
-import com.bihar.seva.repositories.ProviderRepository;
 import com.bihar.seva.repositories.UserRepository;
+import com.bihar.seva.repositories.DynamicServiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ public class BookingService {
     
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
-    private final ProviderRepository providerRepository;
+    private final DynamicServiceRepository dynamicServiceRepository;
     
     public Booking createBooking(BookingRequestDTO bookingRequest) {
         // Validate user exists
@@ -29,8 +28,12 @@ public class BookingService {
             .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Validate provider exists
-        Provider provider = providerRepository.findById(bookingRequest.getProviderId())
+        com.bihar.seva.model.User provider = userRepository.findById(bookingRequest.getProviderId())
             .orElseThrow(() -> new RuntimeException("Provider not found"));
+        
+        if (!"PROVIDER".equals(provider.getRole())) {
+            throw new RuntimeException("User is not a provider");
+        }
         
         // Check if provider is verified
         if (!provider.isVerified()) {
@@ -41,6 +44,7 @@ public class BookingService {
         booking.setUserId(bookingRequest.getUserId());
         booking.setProviderId(bookingRequest.getProviderId());
         booking.setService(bookingRequest.getService());
+        booking.setServiceId(bookingRequest.getServiceId());
         booking.setAddress(bookingRequest.getAddress());
         booking.setCity(bookingRequest.getCity());
         booking.setPincode(bookingRequest.getPincode());
@@ -97,11 +101,21 @@ public class BookingService {
             booking.setCompletedDate(LocalDateTime.now());
             
             // Update provider stats
-            Provider provider = providerRepository.findById(booking.getProviderId()).orElse(null);
-            if (provider != null) {
-                provider.setCompletedBookings(provider.getCompletedBookings() + 1);
+            com.bihar.seva.model.User provider = userRepository.findById(booking.getProviderId()).orElse(null);
+            if (provider != null && "PROVIDER".equals(provider.getRole())) {
                 provider.setTotalBookings(provider.getTotalBookings() + 1);
-                providerRepository.save(provider);
+                userRepository.save(provider);
+            }
+            
+            // Update service completedJobs count
+            if (booking.getServiceId() != null && !booking.getServiceId().isEmpty()) {
+                com.bihar.seva.model.DynamicService service = dynamicServiceRepository.findById(booking.getServiceId()).orElse(null);
+                if (service != null) {
+                    int currentJobs = service.getCompletedJobs() != null ? service.getCompletedJobs() : 0;
+                    service.setCompletedJobs(currentJobs + 1);
+                    dynamicServiceRepository.save(service);
+                    log.info("Updated completedJobs for service: {} to {}", service.getId(), currentJobs + 1);
+                }
             }
         }
         

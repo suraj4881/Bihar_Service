@@ -5,7 +5,7 @@ import com.bihar.seva.dto.BookingRequestDTO;
 import com.bihar.seva.model.Booking;
 import com.bihar.seva.service.BookingService;
 import com.bihar.seva.service.NotificationService;
-import com.bihar.seva.service.EarningsService;
+import com.bihar.seva.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ public class BookingController {
     
     private final BookingService bookingService;
     private final NotificationService notificationService;
-    private final EarningsService earningsService;
+    private final UserRepository userRepository;
     
     // Create booking
     @PostMapping
@@ -66,7 +66,35 @@ public class BookingController {
         try {
             Booking booking = bookingService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
-            return ResponseEntity.ok(new ApiResponse(true, "Booking retrieved", booking));
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", booking.getId());
+            map.put("userId", booking.getUserId());
+            map.put("providerId", booking.getProviderId());
+            map.put("serviceId", booking.getServiceId());
+            map.put("service", booking.getService());
+            map.put("serviceName", booking.getServiceName());
+            map.put("serviceCategory", booking.getServiceCategory());
+            map.put("address", booking.getAddress());
+            map.put("city", booking.getCity());
+            map.put("pincode", booking.getPincode());
+            map.put("scheduledDate", booking.getScheduledDate());
+            map.put("bookingDate", booking.getBookingDate());
+            map.put("status", booking.getStatus());
+            map.put("price", booking.getPrice());
+            map.put("totalAmount", booking.getTotalAmount());
+            map.put("paymentStatus", booking.getPaymentStatus());
+            map.put("specialInstructions", booking.getSpecialInstructions());
+            map.put("emergencyContact", booking.getEmergencyContact());
+            map.put("emergencyPhone", booking.getEmergencyPhone());
+            
+            String customerName = booking.getEmergencyContact();
+            if (customerName == null || customerName.isEmpty()) {
+                userRepository.findById(booking.getUserId()).ifPresent(user -> map.put("customerName", user.getName()));
+            } else {
+                map.put("customerName", customerName);
+            }
+            map.put("customerPhone", booking.getEmergencyPhone());
+            return ResponseEntity.ok(new ApiResponse(true, "Booking retrieved", map));
         } catch (Exception e) {
             log.error("Error fetching booking: ", e);
             return ResponseEntity.badRequest()
@@ -106,7 +134,42 @@ public class BookingController {
             } else {
                 bookings = bookingService.getBookingsByProvider(providerId);
             }
-            return ResponseEntity.ok(new ApiResponse(true, "Provider bookings retrieved", bookings));
+            List<java.util.Map<String, Object>> enriched = new java.util.ArrayList<>();
+            for (Booking booking : bookings) {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", booking.getId());
+                map.put("userId", booking.getUserId());
+                map.put("providerId", booking.getProviderId());
+                map.put("serviceId", booking.getServiceId());
+                map.put("service", booking.getService());
+                map.put("serviceName", booking.getServiceName());
+                map.put("serviceCategory", booking.getServiceCategory());
+                map.put("address", booking.getAddress());
+                map.put("city", booking.getCity());
+                map.put("pincode", booking.getPincode());
+                map.put("scheduledDate", booking.getScheduledDate());
+                map.put("bookingDate", booking.getBookingDate());
+                map.put("status", booking.getStatus());
+                map.put("price", booking.getPrice());
+                map.put("totalAmount", booking.getTotalAmount());
+                map.put("paymentStatus", booking.getPaymentStatus());
+                map.put("specialInstructions", booking.getSpecialInstructions());
+                map.put("emergencyContact", booking.getEmergencyContact());
+                map.put("emergencyPhone", booking.getEmergencyPhone());
+                
+                String customerName = booking.getEmergencyContact();
+                String customerPhone = booking.getEmergencyPhone();
+                if (customerName == null || customerName.isEmpty()) {
+                    userRepository.findById(booking.getUserId()).ifPresent(user -> map.put("customerName", user.getName()));
+                } else {
+                    map.put("customerName", customerName);
+                }
+                if (customerPhone != null && !customerPhone.isEmpty()) {
+                    map.put("customerPhone", customerPhone);
+                }
+                enriched.add(map);
+            }
+            return ResponseEntity.ok(new ApiResponse(true, "Provider bookings retrieved", enriched));
         } catch (Exception e) {
             log.error("Error fetching provider bookings: ", e);
             return ResponseEntity.badRequest()
@@ -167,7 +230,7 @@ public class BookingController {
             Booking booking = bookingService.updateBookingStatus(id, "COMPLETED");
             
             // Create earnings record
-            earningsService.createEarning(booking, 0.15); // 15% commission
+            // Commission is now handled via PaymentService
             
             // Notify customer
             notificationService.createNotification(

@@ -20,19 +20,19 @@ import {
   Rating,
   InputAdornment,
   Pagination,
-  AppBar,
-  Toolbar,
   IconButton,
   CircularProgress,
+  Chip,
 } from '@mui/material';
-import { Search, LocationOn, FilterList, ArrowBack, SearchOff } from '@mui/icons-material';
+import { Search, LocationOn, FilterList, SearchOff, Map, List as ListIcon, MyLocation, Phone, WhatsApp, Chat } from '@mui/icons-material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import Logo from '../components/Logo';
+import AppBar from '../components/AppBar';
 import StatusBadge from '../components/StatusBadge';
-import { dummyProviders, DummyProvider } from '../data/dummyProviders';
-import { config, getApiUrl, devLog } from '../config/config';
+import { getApiUrl } from '../config/config';
 
+
+// Frontend Provider interface (for display)
 interface Provider {
   id: string;
   name: string;
@@ -43,12 +43,20 @@ interface Provider {
   price: number;
   isVerified: boolean;
   profilePhoto?: string;
-  experience: number;
+  experience?: number;
+  expertiseLevel?: string;
+  biography?: string; // Optional field for search matching
+  phone?: string;
+  whatsappNumber?: string;
+  allowDirectCall?: boolean;
+  allowWhatsApp?: boolean;
+  allowInAppChat?: boolean;
+  completedJobs?: number;
 }
 
 const ServiceSearchPage: React.FC = () => {
   const navigate = useNavigate();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [searchParams] = useSearchParams();
   
   // ✅ Sync language on mount from localStorage
@@ -65,128 +73,75 @@ const ServiceSearchPage: React.FC = () => {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [location, setLocation] = useState(searchParams.get('location') || 'Patna');
+  const [location, setLocation] = useState(searchParams.get('location') || '');
   const [priceRange, setPriceRange] = useState<number[]>([0, 2000]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [minRating, setMinRating] = useState<number>(0);
   const [onlyVerified, setOnlyVerified] = useState(true);
   const [sortBy, setSortBy] = useState<string>('rating');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [searchRadius, setSearchRadius] = useState<number>(5); // Default 5km
+  const [locationType, setLocationType] = useState<'city' | 'gps'>('city');
 
-  const categories = ['Plumbing', 'Electrical', 'Cleaning', 'Carpentry', 'AC Repair', 'Painting'];
+  // Update search query when URL params change
+  useEffect(() => {
+    const queryParam = searchParams.get('q') || '';
+    const locationParam = searchParams.get('location') || '';
+    
+    if (queryParam !== searchQuery) {
+      setSearchQuery(queryParam);
+    }
+    
+    if (locationParam !== location) {
+      setLocation(locationParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     // Fetch/filter providers whenever dependencies change
     fetchProviders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, location, priceRange, selectedCategories, minRating, onlyVerified, sortBy, page]);
+  }, [
+    searchQuery,
+    location,
+    locationType,
+    userLocation,
+    searchRadius,
+    priceRange,
+    minRating,
+    onlyVerified,
+    sortBy,
+    page,
+  ]);
 
-  const loadDummyData = () => {
-    // Check if dummy data is available (for development only)
-    if (!dummyProviders || dummyProviders.length === 0) {
-      devLog('⚠️ No dummy data available. Please ensure backend is running.');
-      setProviders([]);
-      setTotalPages(0);
-      return;
-    }
-    
-    devLog('🧪 DEVELOPMENT MODE - Using dummy data');
-    devLog('🔍 Search Query:', searchQuery);
-    devLog('📍 Location:', location);
-    devLog('💰 Price Range:', priceRange);
-    devLog('⭐ Min Rating:', minRating);
-    devLog('✅ Only Verified:', onlyVerified);
-    devLog('📂 Selected Categories:', selectedCategories);
-    
-    // Convert dummy providers to Provider format
-    let filtered: Provider[] = dummyProviders.map((p: DummyProvider) => ({
-      id: p.id,
-      name: p.name,
-      skill: p.skill,
-      rating: p.rating,
-      totalReviews: p.totalReviews,
-      city: p.city,
-      price: p.hourlyRate,
-      isVerified: p.isVerified,
-      experience: parseInt(p.experience),
-    }));
-    
-    devLog('📦 Total providers before filter:', filtered.length);
-
-    // Apply search query filter
-    if (searchQuery && searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((p) => {
-        const skill = p.skill.toLowerCase();
-        const name = p.name.toLowerCase();
-        
-        // Match full word or partial match
-        return (
-          skill.includes(query) ||
-          name.includes(query) ||
-          // Handle variations like "plumber" matching "plumbing"
-          (query.includes('plumb') && skill.includes('plumb')) ||
-          (query.includes('electric') && skill.includes('electric')) ||
-          (query.includes('clean') && skill.includes('clean')) ||
-          (query.includes('carpen') && skill.includes('carpen')) ||
-          (query.includes('ac') && skill.includes('ac')) ||
-          (query.includes('paint') && skill.includes('paint'))
-        );
-      });
-      devLog('🔍 After search filter:', filtered.length);
-    }
-
-    // Apply location filter
-    if (location && location.trim() !== '') {
-      const beforeCount = filtered.length;
-      filtered = filtered.filter((p) => 
-        p.city.toLowerCase().trim() === location.toLowerCase().trim()
-      );
-      devLog(`📍 After location filter (${location}):`, filtered.length, `(was ${beforeCount})`);
-      if (filtered.length > 0) {
-        devLog('📍 Matching cities:', Array.from(new Set(filtered.map(p => p.city))));
-      }
-    }
-
-    if (onlyVerified) {
-      filtered = filtered.filter((p) => p.isVerified);
-    }
-
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter((p) => selectedCategories.includes(p.skill));
-    }
-
-    filtered = filtered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    if (minRating > 0) {
-      filtered = filtered.filter((p) => p.rating >= minRating);
-    }
-
-    // Sort
-    if (sortBy === 'rating') {
-      filtered.sort((a, b) => b.rating - a.rating);
-    } else if (sortBy === 'price') {
-      filtered.sort((a, b) => a.price - b.price);
-    }
-
-    devLog('✅ Filtered providers:', filtered.length);
-    devLog('👥 Providers:', filtered.map(p => `${p.name} (${p.skill})`));
-    
-    setProviders(filtered);
-    setTotalPages(Math.ceil(filtered.length / 9));
-  };
 
   const fetchProviders = async () => {
     setLoading(true);
     
     try {
       // Build API URL with query parameters
-      const apiUrl = getApiUrl(
-        `/api/providers/search?q=${encodeURIComponent(searchQuery)}&city=${encodeURIComponent(location)}&minPrice=${priceRange[0]}&maxPrice=${priceRange[1]}&verified=${onlyVerified}&sort=${sortBy}&page=${page}`
-      );
+      // Use SearchController endpoint for dynamic services
+      const params = new URLSearchParams();
+      if (searchQuery && searchQuery.trim() !== '') {
+        params.append('query', searchQuery.trim());
+      }
+      // Add location based on selected type
+      if (locationType === 'gps' && userLocation) {
+        params.append('latitude', userLocation.latitude.toString());
+        params.append('longitude', userLocation.longitude.toString());
+        params.append('radiusKm', searchRadius.toString());
+      } else if (locationType === 'city' && location && location.trim() !== '') {
+        params.append('city', location.trim());
+      }
+      // Category filter removed from UI
       
-      devLog('🌐 Fetching from API:', apiUrl);
+      // Use services collection search endpoint
+      const apiUrl = getApiUrl(`/api/services/search?${params.toString()}`);
+      
       
       // Try to fetch from backend API
       const response = await fetch(apiUrl, {
@@ -200,48 +155,55 @@ const ServiceSearchPage: React.FC = () => {
         const data = await response.json();
         
         if (data.success && data.data && Array.isArray(data.data)) {
-          devLog('✅ BACKEND DATA received:', data.data.length, 'providers');
-          setProviders(data.data);
-          setTotalPages(data.totalPages || Math.ceil(data.data.length / 9));
+          // If backend returns empty results, show empty state
+          if (data.data.length === 0) {
+            setProviders([]);
+            setTotalPages(0);
+            setLoading(false);
+            return;
+          }
+          
+          // Convert DynamicService to Provider format for display
+          const convertedProviders: Provider[] = data.data.map((service: any) => ({
+            id: service.id,
+            name: service.providerName || 'Provider',
+            skill: service.serviceName || service.category || 'Service',
+            rating: service.averageRating || 0,
+            totalReviews: service.totalReviews || 0,
+            city: service.city || service.address || (service.serviceAreas && service.serviceAreas[0]) || 'N/A',
+            price: service.finalPrice || service.basePrice || service.price || 0,
+            isVerified: service.isVerified || service.isApproved || false,
+            profilePhoto: service.serviceImages && service.serviceImages.length > 0 
+              ? `http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(service.serviceImages[0])}`
+              : undefined,
+            experience: service.experience,
+            expertiseLevel: service.expertiseLevel,
+            phone: service.phone,
+            whatsappNumber: service.whatsappNumber,
+            allowDirectCall: service.allowDirectCall,
+            allowWhatsApp: service.allowWhatsApp,
+            allowInAppChat: service.allowInAppChat,
+            completedJobs: service.completedJobs || 0,
+          }));
+          
+          setProviders(convertedProviders);
+          setTotalPages(data.totalPages || Math.ceil(convertedProviders.length / 9));
           setLoading(false);
           return;
         }
       }
       
-      // Fallback to dummy data only in development
-      if (config.features.useDummyData) {
-        devLog('⚠️ Backend not available, using DUMMY data (development only)');
-        loadDummyData();
-      } else {
-        // Production: No dummy data, show empty state
-        devLog('❌ Backend not available and dummy data disabled');
-        setProviders([]);
-        setTotalPages(0);
-      }
+      // Show empty state if backend not available
+      setProviders([]);
+      setTotalPages(0);
+      setLoading(false);
       
     } catch (error) {
-      devLog('⚠️ Backend error:', error);
-      
-      // Fallback to dummy data only in development
-      if (config.features.useDummyData) {
-        devLog('📦 Using DUMMY data fallback');
-        loadDummyData();
-      } else {
-        // Production: Show empty state
-        setProviders([]);
-        setTotalPages(0);
-      }
-    } finally {
+      // Show empty state on error
+      setProviders([]);
+      setTotalPages(0);
       setLoading(false);
     }
-  };
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
   };
 
   const handleSearch = () => {
@@ -249,24 +211,42 @@ const ServiceSearchPage: React.FC = () => {
     fetchProviders();
   };
 
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      return;
+    }
+    
+    setLocationLoading(true);
+    setLocationType('gps');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ latitude, longitude });
+        setLocationLoading(false);
+        // Auto-search nearby services
+        fetchProviders();
+      },
+      (error) => {
+        setLocationLoading(false);
+        setLocationType('city');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
   return (
     <Box>
       {/* Navigation Bar */}
-      <AppBar position="sticky" sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate('/')} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Logo size="small" showText onClick={() => navigate('/')} />
-          <Box sx={{ flexGrow: 1 }} />
-          <Button onClick={() => navigate('/profile')}>Profile</Button>
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Search Bar */}
-        <Box sx={{ mb: 4 }}>
-          <Grid container spacing={2}>
+        <Card sx={{ mb: 4, p: 2.5, borderRadius: 3, boxShadow: '0 6px 24px rgba(0,0,0,0.08)' }}>
+          <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={5}>
               <TextField
                 fullWidth
@@ -283,22 +263,71 @@ const ServiceSearchPage: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                placeholder="Location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LocationOn />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <Select
+                  value={locationType}
+                  onChange={(e) => {
+                    const nextType = e.target.value as 'city' | 'gps';
+                    setLocationType(nextType);
+                    if (nextType === 'gps') {
+                      getCurrentLocation();
+                    } else {
+                      setUserLocation(null);
+                    }
+                  }}
+                  sx={{ height: '56px' }}
+                >
+                  <MenuItem value="city">City</MenuItem>
+                  <MenuItem value="gps">GPS Location</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={3}>
+              {locationType === 'gps' ? (
+                <TextField
+                  fullWidth
+                  placeholder={userLocation ? 'Location detected' : 'Click Nearby to detect'}
+                  value={userLocation ? `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}` : ''}
+                  disabled
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <MyLocation />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              ) : (
+                <TextField
+                  fullWidth
+                  placeholder="Location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LocationOn />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              )}
+            </Grid>
+            <Grid item xs={12} md={1}>
+              <FormControl fullWidth>
+                <Select
+                  value={searchRadius}
+                  onChange={(e) => setSearchRadius(e.target.value as number)}
+                  sx={{ height: '56px' }}
+                  disabled={locationType !== 'gps'}
+                >
+                  <MenuItem value={5}>5 km</MenuItem>
+                  <MenuItem value={10}>10 km</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={2}>
               <Button
                 fullWidth
                 variant="contained"
@@ -312,37 +341,36 @@ const ServiceSearchPage: React.FC = () => {
                 Search
               </Button>
             </Grid>
+            <Grid item xs={12} md={1}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={locationLoading ? <CircularProgress size={16} /> : <MyLocation />}
+                onClick={getCurrentLocation}
+                disabled={locationLoading}
+                sx={{
+                  height: '56px',
+                  borderColor: '#FF6B35',
+                  color: '#FF6B35',
+                  '&:hover': { borderColor: '#E64A19', bgcolor: 'rgba(255, 107, 53, 0.04)' },
+                }}
+                title="Find Nearby Services"
+              >
+                Nearby
+              </Button>
+            </Grid>
           </Grid>
-        </Box>
+        </Card>
 
         <Grid container spacing={3}>
           {/* Filters Sidebar */}
           <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent>
+            <Card sx={{ borderRadius: 3, boxShadow: '0 6px 20px rgba(0,0,0,0.06)' }}>
+              <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                   <FilterList sx={{ mr: 1 }} />
                   <Typography variant="h6">Filters</Typography>
                 </Box>
-
-                {/* Categories */}
-                <FormControl component="fieldset" sx={{ mb: 3 }}>
-                  <FormLabel component="legend">Categories</FormLabel>
-                  <FormGroup>
-                    {categories.map((category) => (
-                      <FormControlLabel
-                        key={category}
-                        control={
-                          <Checkbox
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => handleCategoryChange(category)}
-                          />
-                        }
-                        label={category}
-                      />
-                    ))}
-                  </FormGroup>
-                </FormControl>
 
                 {/* Price Range */}
                 <Box sx={{ mb: 3 }}>
@@ -389,7 +417,6 @@ const ServiceSearchPage: React.FC = () => {
                   fullWidth
                   variant="outlined"
                   onClick={() => {
-                    setSelectedCategories([]);
                     setPriceRange([0, 2000]);
                     setMinRating(0);
                     setOnlyVerified(true);
@@ -409,18 +436,50 @@ const ServiceSearchPage: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>
                   {providers.length} Provider{providers.length !== 1 ? 's' : ''} Found
                 </Typography>
-                <FormControl sx={{ minWidth: 200 }}>
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    displayEmpty
-                  >
-                    <MenuItem value="rating">Sort by Rating</MenuItem>
-                    <MenuItem value="price-low">Price: Low to High</MenuItem>
-                    <MenuItem value="price-high">Price: High to Low</MenuItem>
-                    <MenuItem value="reviews">Most Reviews</MenuItem>
-                  </Select>
-                </FormControl>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                    <Button
+                      size="small"
+                      variant={viewMode === 'list' ? 'contained' : 'text'}
+                      onClick={() => setViewMode('list')}
+                      startIcon={<ListIcon />}
+                      sx={{
+                        borderRadius: 0,
+                        bgcolor: viewMode === 'list' ? '#FF6B35' : 'transparent',
+                        color: viewMode === 'list' ? 'white' : 'inherit',
+                        '&:hover': { bgcolor: viewMode === 'list' ? '#E64A19' : 'rgba(0,0,0,0.04)' },
+                      }}
+                    >
+                      List
+                    </Button>
+                    <Button
+                      size="small"
+                      variant={viewMode === 'map' ? 'contained' : 'text'}
+                      onClick={() => setViewMode('map')}
+                      startIcon={<Map />}
+                      sx={{
+                        borderRadius: 0,
+                        bgcolor: viewMode === 'map' ? '#FF6B35' : 'transparent',
+                        color: viewMode === 'map' ? 'white' : 'inherit',
+                        '&:hover': { bgcolor: viewMode === 'map' ? '#E64A19' : 'rgba(0,0,0,0.04)' },
+                      }}
+                    >
+                      Map
+                    </Button>
+                  </Box>
+                  <FormControl sx={{ minWidth: 200 }}>
+                    <Select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      displayEmpty
+                    >
+                      <MenuItem value="rating">Sort by Rating</MenuItem>
+                      <MenuItem value="price-low">Price: Low to High</MenuItem>
+                      <MenuItem value="price-high">Price: High to Low</MenuItem>
+                      <MenuItem value="reviews">Most Reviews</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
               </Box>
             )}
 
@@ -454,7 +513,6 @@ const ServiceSearchPage: React.FC = () => {
                     variant="contained"
                     onClick={() => {
                       setSearchQuery('');
-                      setSelectedCategories([]);
                       setOnlyVerified(false);
                       setMinRating(0);
                       setPriceRange([0, 2000]);
@@ -485,35 +543,41 @@ const ServiceSearchPage: React.FC = () => {
                     Back to Home
                   </Button>
                 </Box>
-                
-                {/* Suggestions */}
-                <Box sx={{ mt: 4, textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Popular Services:
+              </Box>
+            ) : viewMode === 'map' ? (
+              <Box sx={{ height: '600px', border: '1px solid #e0e0e0', borderRadius: 2, position: 'relative', bgcolor: '#f5f5f5' }}>
+                <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 1000, bgcolor: 'white', p: 2, borderRadius: 2, boxShadow: 2 }}>
+                  <Typography variant="h6" gutterBottom>Map View</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {providers.length} providers found
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mt: 1 }}>
-                    {['Plumber', 'Electrician', 'Cleaner', 'Carpenter', 'AC Repair', 'Painter'].map((service) => (
-                      <Button
-                        key={service}
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          setSearchQuery(service);
-                          setPage(1);
-                        }}
-                        sx={{
-                          borderColor: '#E0E0E0',
-                          color: 'text.secondary',
-                          textTransform: 'none',
-                          '&:hover': {
-                            borderColor: '#FF6B35',
-                            color: '#FF6B35',
-                          },
-                        }}
-                      >
-                        {service}
-                      </Button>
-                    ))}
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<ListIcon />}
+                    onClick={() => setViewMode('list')}
+                    sx={{ mt: 2 }}
+                  >
+                    Switch to List
+                  </Button>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Map sx={{ fontSize: 80, color: '#ccc', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      Map View Coming Soon
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Interactive map with provider locations will be available soon
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<ListIcon />}
+                      onClick={() => setViewMode('list')}
+                      sx={{ bgcolor: '#FF6B35', '&:hover': { bgcolor: '#E64A19' } }}
+                    >
+                      View as List
+                    </Button>
                   </Box>
                 </Box>
               </Box>
@@ -542,26 +606,43 @@ const ServiceSearchPage: React.FC = () => {
                               {provider.name[0]}
                             </Avatar>
                           </Grid>
-                          <Grid item xs={12} sm={9} md={7}>
+                          <Grid item xs={12} sm={9} md={6}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                               <Typography variant="h6">{provider.name}</Typography>
                               {provider.isVerified && <StatusBadge status="verified" />}
                             </Box>
                             <Typography color="text.secondary" gutterBottom>
-                              {provider.skill} • {provider.experience} years experience
+                              {provider.skill}
+                              {' • '}
+                              {provider.experience
+                                ? `${provider.experience} years experience`
+                                : provider.expertiseLevel
+                                  ? provider.expertiseLevel
+                                  : 'Experience N/A'}
                             </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1, flexWrap: 'wrap' }}>
                               <Rating value={provider.rating} precision={0.1} size="small" readOnly />
-                              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                              <Typography variant="body2" color="text.secondary">
                                 {provider.rating} ({provider.totalReviews} reviews)
                               </Typography>
+                              {provider.completedJobs !== undefined && provider.completedJobs > 0 && (
+                                <Chip
+                                  label={`${provider.completedJobs} jobs completed`}
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                />
+                              )}
                             </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                               <LocationOn sx={{ fontSize: 18, mr: 0.5 }} />
                               <Typography variant="body2">{provider.city}</Typography>
                             </Box>
+                            <Typography variant="caption" color="text.secondary">
+                              Book to unlock chat and call.
+                            </Typography>
                           </Grid>
-                          <Grid item xs={12} md={3} sx={{ textAlign: 'right' }}>
+                          <Grid item xs={12} md={4} sx={{ textAlign: 'right' }}>
                             <Typography variant="h5" color="primary" gutterBottom>
                               ₹{provider.price}+
                             </Typography>

@@ -6,8 +6,6 @@ import {
   Card,
   CardContent,
   Typography,
-  AppBar,
-  Toolbar,
   IconButton,
   Avatar,
   Menu,
@@ -55,7 +53,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import Logo from '../components/Logo';
+import AppBar from '../components/AppBar';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -83,7 +81,6 @@ const CustomerDashboard: React.FC = () => {
     const savedLanguage = localStorage.getItem('language');
     if (savedLanguage === 'hi' || savedLanguage === 'en') {
       if (savedLanguage !== language) {
-        console.log('🔄 CustomerDashboard: Syncing language from localStorage:', savedLanguage);
         setLanguage(savedLanguage as 'en' | 'hi');
       }
     }
@@ -97,26 +94,110 @@ const CustomerDashboard: React.FC = () => {
     completedBookings: 0,
     favoriteProviders: 0,
   });
-
-  useEffect(() => {
-    fetchCustomerStats();
-  }, []);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
 
   const fetchCustomerStats = async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
-      // TODO: Replace with actual API endpoint
-      // Mock data for now
-      setStats({
-        totalBookings: 12,
-        activeBookings: 2,
-        completedBookings: 10,
-        favoriteProviders: 5,
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/bookings/user/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          const totalBookings = data.data.length;
+          const activeBookings = data.data.filter((b: any) =>
+            ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)
+          ).length;
+          const completedBookings = data.data.filter((b: any) => b.status === 'COMPLETED').length;
+          
+          setStats((prev) => ({
+            ...prev,
+            totalBookings,
+            activeBookings,
+            completedBookings,
+          }));
+        }
+      }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      // Keep default stats (all zeros)
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBookings = async () => {
+    setBookingsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/bookings/user/${user?.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setBookings(data.data);
+          const totalBookings = data.data.length;
+          const activeBookings = data.data.filter((b: any) =>
+            ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)
+          ).length;
+          const completedBookings = data.data.filter((b: any) => b.status === 'COMPLETED').length;
+          setStats((prev) => ({
+            ...prev,
+            totalBookings,
+            activeBookings,
+            completedBookings,
+          }));
+        }
+      }
+    } catch (error) {
+      setBookings([]);
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    setFavoritesLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/favorites/${user?.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setFavorites(data.data);
+          setStats((prev) => ({
+            ...prev,
+            favoriteProviders: data.data.length || 0,
+          }));
+        }
+      }
+    } catch (error) {
+      setFavorites([]);
+    } finally {
+      setFavoritesLoading(false);
     }
   };
 
@@ -143,36 +224,27 @@ const CustomerDashboard: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (tabValue === 0 || tabValue === 1) {
+      fetchBookings();
+    } else if (tabValue === 2) {
+      fetchFavorites();
+    } else if (tabValue === 3) {
+      fetchBookings();
+    }
+  }, [tabValue]);
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
       {/* App Bar */}
-      <AppBar position="static" sx={{ bgcolor: '#667eea' }}>
-        <Toolbar>
-          <Logo size="medium" onClick={() => navigate('/')} />
-          <Typography variant="h6" sx={{ flexGrow: 1, ml: 2, fontWeight: 700 }}>
-            My Dashboard
-          </Typography>
-          <IconButton color="inherit">
-            <Notifications />
-          </IconButton>
-          <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
-            <Avatar sx={{ bgcolor: '#764ba2', width: 32, height: 32 }}>
-              {user?.name?.charAt(0).toUpperCase() || 'C'}
-            </Avatar>
-          </IconButton>
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-            <MenuItem onClick={() => navigate('/profile')}>Profile</MenuItem>
-            <MenuItem onClick={handleLogout}>Logout</MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="dashboard" position="static" title="My Dashboard" />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Search Bar */}
         <Card sx={{ mb: 4, p: 2 }}>
           <TextField
             fullWidth
-            placeholder="Search for services... (e.g., Plumber, Electrician, AC Repair)"
+            placeholder={language === 'hi' ? 'सेवाएं खोजें...' : 'Search for services...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -187,7 +259,7 @@ const CustomerDashboard: React.FC = () => {
                   <Button
                     variant="contained"
                     onClick={handleSearch}
-                    sx={{ bgcolor: '#667eea', '&:hover': { bgcolor: '#5568d3' } }}
+                    sx={{ bgcolor: '#3B82F6', '&:hover': { bgcolor: '#2563EB' } }}
                   >
                     Search
                   </Button>
@@ -200,7 +272,7 @@ const CustomerDashboard: React.FC = () => {
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+            <Card sx={{ background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)', color: 'white' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -299,35 +371,44 @@ const CustomerDashboard: React.FC = () => {
                         View All
                       </Button>
                     </Box>
-                    <List>
-                      {[1, 2].map((item) => (
-                        <ListItem key={item} sx={{ borderBottom: '1px solid #eee', mb: 1 }}>
-                          <ListItemIcon>
-                            <Assignment color="primary" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary="Plumbing Service"
-                            secondary={
-                              <>
-                                <Box component="span" sx={{ display: 'block' }}>
-                                  Provider: Rajesh Kumar
-                                </Box>
-                                <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
-                                  Scheduled: Today 2:00 PM
-                                </Box>
-                                <Box component="span" sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                                  <Rating value={4.5} readOnly size="small" />
-                                  <Typography variant="caption" sx={{ ml: 1 }}>
-                                    4.5 (15 reviews)
-                                  </Typography>
-                                </Box>
-                              </>
-                            }
-                          />
-                          <Chip label="Pending" color="warning" size="small" />
-                        </ListItem>
-                      ))}
-                    </List>
+                    {bookingsLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : bookings.filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS').length === 0 ? (
+                      <Alert severity="info">No active bookings</Alert>
+                    ) : (
+                      <List>
+                        {bookings
+                          .filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS')
+                          .slice(0, 2)
+                          .map((booking) => (
+                            <ListItem key={booking.id} sx={{ borderBottom: '1px solid #eee', mb: 1 }}>
+                              <ListItemIcon>
+                                <Assignment color="primary" />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={booking.serviceName || booking.service}
+                                secondary={
+                                  <>
+                                    <Box component="span" sx={{ display: 'block' }}>
+                                      Provider: {booking.providerName || 'N/A'}
+                                    </Box>
+                                    <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
+                                      Scheduled: {booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleString() : 'Not scheduled'}
+                                    </Box>
+                                  </>
+                                }
+                              />
+                              <Chip 
+                                label={booking.status || 'Pending'} 
+                                color={booking.status === 'COMPLETED' ? 'success' : booking.status === 'CANCELLED' ? 'error' : 'warning'} 
+                                size="small" 
+                              />
+                            </ListItem>
+                          ))}
+                      </List>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
@@ -370,14 +451,12 @@ const CustomerDashboard: React.FC = () => {
                 <Card sx={{ mt: 2 }}>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
-                      Popular Services
+                      Quick Search
                     </Typography>
                     <List dense>
-                      {['Plumber', 'Electrician', 'AC Repair', 'Carpenter'].map((service) => (
-                        <ListItem key={service} button onClick={() => navigate(`/search?q=${service}`)}>
-                          <ListItemText primary={service} />
-                        </ListItem>
-                      ))}
+                      <ListItem button onClick={() => navigate('/services')}>
+                        <ListItemText primary={language === 'hi' ? 'सभी सेवाएं खोजें' : 'Search All Services'} />
+                      </ListItem>
                     </List>
                   </CardContent>
                 </Card>
@@ -408,25 +487,61 @@ const CustomerDashboard: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>Plumbing</TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Rajesh Kumar
+                      {bookingsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <CircularProgress />
+                          </TableCell>
+                        </TableRow>
+                      ) : bookings.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <Typography variant="body2" color="text.secondary">
+                              No bookings found
                             </Typography>
-                            <Rating value={4.5} readOnly size="small" />
-                          </Box>
-                        </TableCell>
-                        <TableCell>28 Nov, 2:00 PM</TableCell>
-                        <TableCell>₹1,500</TableCell>
-                        <TableCell>
-                          <Chip label="Pending" color="warning" size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Button size="small" variant="outlined">View</Button>
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        bookings.map((booking) => (
+                          <TableRow key={booking.id}>
+                            <TableCell>{booking.serviceName || booking.service}</TableCell>
+                            <TableCell>
+                              <Box>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {booking.providerName || 'N/A'}
+                                </Typography>
+                                {booking.providerRating && (
+                                  <Rating value={booking.providerRating} readOnly size="small" />
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              {booking.scheduledDate 
+                                ? new Date(booking.scheduledDate).toLocaleString() 
+                                : booking.bookingDate 
+                                ? new Date(booking.bookingDate).toLocaleString() 
+                                : 'N/A'}
+                            </TableCell>
+                            <TableCell>₹{booking.totalAmount || booking.price || 0}</TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={booking.status || 'Pending'} 
+                                color={
+                                  booking.status === 'COMPLETED' ? 'success' : 
+                                  booking.status === 'CANCELLED' ? 'error' : 
+                                  'warning'
+                                } 
+                                size="small" 
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Button size="small" variant="outlined" onClick={() => navigate(`/booking/${booking.id}`)}>
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -441,36 +556,69 @@ const CustomerDashboard: React.FC = () => {
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
                   Favorite Providers
                 </Typography>
-                <Grid container spacing={2}>
-                  {[1, 2, 3].map((item) => (
-                    <Grid item xs={12} sm={6} md={4} key={item}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Avatar sx={{ bgcolor: '#667eea', mr: 2 }}>
-                              R
-                            </Avatar>
-                            <Box>
-                              <Typography variant="h6">Rajesh Kumar</Typography>
-                              <Rating value={4.5} readOnly size="small" />
+                {favoritesLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : favorites.length === 0 ? (
+                  <Alert severity="info">No favorite providers</Alert>
+                ) : (
+                  <Grid container spacing={2}>
+                    {favorites.map((favorite) => (
+                      <Grid item xs={12} sm={6} md={4} key={favorite.id || favorite.providerId}>
+                        <Card variant="outlined">
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                              <Avatar sx={{ bgcolor: '#3B82F6', mr: 2 }}>
+                                {favorite.providerName?.charAt(0) || 'P'}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="h6">{favorite.providerName || 'Provider'}</Typography>
+                                {favorite.rating && (
+                                  <Rating value={favorite.rating} readOnly size="small" />
+                                )}
+                              </Box>
                             </Box>
-                          </Box>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-                            Patna, Bihar
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Plumbing • Electrician
-                          </Typography>
-                          <Box sx={{ mt: 2 }}>
-                            <Button size="small" variant="outlined" sx={{ mr: 1 }}>View</Button>
-                            <Button size="small" variant="outlined" color="error">Remove</Button>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                              {favorite.city || favorite.location || 'N/A'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              {favorite.services?.join(' • ') || favorite.category || 'Service Provider'}
+                            </Typography>
+                            <Box sx={{ mt: 2 }}>
+                              <Button 
+                                size="small" 
+                                variant="outlined" 
+                                sx={{ mr: 1 }}
+                                onClick={() => navigate(`/provider/${favorite.providerId}`)}
+                              >
+                                View
+                              </Button>
+                              <Button 
+                                size="small" 
+                                variant="outlined" 
+                                color="error"
+                                onClick={async () => {
+                                  const token = localStorage.getItem('token');
+                                  await fetch(`http://localhost:8080/api/favorites/${favorite.id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                      'Authorization': `Bearer ${token}`,
+                                    },
+                                  });
+                                  fetchFavorites();
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
               </CardContent>
             </Card>
           </TabPanel>
@@ -495,18 +643,50 @@ const CustomerDashboard: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>Plumbing</TableCell>
-                        <TableCell>Rajesh Kumar</TableCell>
-                        <TableCell>25 Nov 2024</TableCell>
-                        <TableCell>₹1,500</TableCell>
-                        <TableCell>
-                          <Chip label="Completed" color="success" size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Rating value={5} readOnly size="small" />
-                        </TableCell>
-                      </TableRow>
+                      {bookingsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <CircularProgress />
+                          </TableCell>
+                        </TableRow>
+                      ) : bookings.filter(b => b.status === 'COMPLETED').length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <Typography variant="body2" color="text.secondary">
+                              No completed bookings
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        bookings
+                          .filter(b => b.status === 'COMPLETED')
+                          .map((booking) => (
+                            <TableRow key={booking.id}>
+                              <TableCell>{booking.serviceName || booking.service}</TableCell>
+                              <TableCell>{booking.providerName || 'N/A'}</TableCell>
+                              <TableCell>
+                                {booking.completedDate 
+                                  ? new Date(booking.completedDate).toLocaleDateString() 
+                                  : booking.bookingDate 
+                                  ? new Date(booking.bookingDate).toLocaleDateString() 
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell>₹{booking.totalAmount || booking.price || 0}</TableCell>
+                              <TableCell>
+                                <Chip label="Completed" color="success" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                {booking.customerRating ? (
+                                  <Rating value={booking.customerRating} readOnly size="small" />
+                                ) : (
+                                  <Button size="small" variant="outlined" onClick={() => navigate(`/booking/${booking.id}/review`)}>
+                                    Rate
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>

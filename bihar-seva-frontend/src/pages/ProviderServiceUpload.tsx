@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -16,6 +16,12 @@ import {
   Paper,
   IconButton,
   Divider,
+  FormControlLabel,
+  Checkbox,
+  FormGroup,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material';
 import {
   AttachMoney,
@@ -25,8 +31,18 @@ import {
   PhotoCamera,
   CheckCircle,
   ArrowBack,
+  MyLocation,
+  LocationOn,
+  EditLocation,
+  Phone,
+  WhatsApp,
+  Chat,
+  AccessTime,
+  CalendarToday,
+  Label,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import AppBar from '../components/AppBar';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -37,8 +53,8 @@ interface ServiceImage {
 
 const ProviderServiceUpload: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
+  const { user, provider } = useAuth();
   
   // ✅ Sync language on mount from localStorage
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,6 +67,7 @@ const ProviderServiceUpload: React.FC = () => {
     }
   }, []);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   
@@ -65,19 +82,32 @@ const ProviderServiceUpload: React.FC = () => {
     tags: [] as string[],
   });
   
-  const [currentTag, setCurrentTag] = useState('');
+  const [contactOptions, setContactOptions] = useState({
+    allowDirectCall: true,
+    allowWhatsApp: true,
+    allowInAppChat: true,
+  });
+  
+  const [availability, setAvailability] = useState({
+    availableDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    availableFrom: '09:00',
+    availableTo: '18:00',
+    isAvailableNow: true,
+  });
+  
+  const [tagInput, setTagInput] = useState('');
+  
+  const [locationMethod, setLocationMethod] = useState<'live' | 'manual'>('manual');
+  const [liveLocation, setLiveLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+    city?: string;
+    pincode?: string;
+  } | null>(null);
+  const [manualLocation, setManualLocation] = useState('');
   const [serviceImages, setServiceImages] = useState<ServiceImage[]>([]);
-
-  const categories = [
-    'Plumbing',
-    'Electrical',
-    'Cleaning',
-    'Carpentry',
-    'AC Repair',
-    'Painting',
-    'Appliance Repair',
-    'Other Services',
-  ];
+  const serviceImageInputRef = useRef<HTMLInputElement>(null);
 
   const expertiseLevels = [
     { value: 'BEGINNER', label: 'Beginner (0-2 years)' },
@@ -91,41 +121,147 @@ const ProviderServiceUpload: React.FC = () => {
     setError('');
   };
 
-  const handleAddTag = () => {
-    if (currentTag.trim() && !serviceData.tags.includes(currentTag.trim())) {
-      setServiceData({
-        ...serviceData,
-        tags: [...serviceData.tags, currentTag.trim()],
-      });
-      setCurrentTag('');
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
     }
-  };
 
-  const handleRemoveTag = (tagToRemove: string) => {
-    setServiceData({
-      ...serviceData,
-      tags: serviceData.tags.filter(tag => tag !== tagToRemove),
-    });
+    if (!window.isSecureContext) {
+      setError('Live location requires HTTPS or localhost. Please use manual entry.');
+      return;
+    }
+    
+    setError('');
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          // Reverse geocoding to get address
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await response.json();
+          const address = data.display_name || fallbackAddress;
+          const locationAddress = data.address || {};
+          const city =
+            locationAddress.city ||
+            locationAddress.town ||
+            locationAddress.village ||
+            locationAddress.county ||
+            locationAddress.state_district ||
+            locationAddress.state ||
+            '';
+          const pincode = locationAddress.postcode || '';
+          
+          setLiveLocation({ latitude, longitude, address, city, pincode });
+          setServiceData({
+            ...serviceData,
+            serviceArea: address,
+          });
+          setError('');
+        } catch (err) {
+          const { latitude, longitude } = position.coords;
+          const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          setLiveLocation({ latitude, longitude, address: fallbackAddress });
+          setServiceData({
+            ...serviceData,
+            serviceArea: fallbackAddress,
+          });
+          setError('Failed to get address from location. Showing coordinates instead.');
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (error) => {
+        let errorMessage = 'Failed to get your location. ';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Location permission denied. Please enable location access in your browser settings or use manual entry.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information unavailable. Please try again or use manual entry.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out. Please try again or use manual entry.';
+            break;
+          default:
+            errorMessage += 'Please use manual entry.';
+            break;
+        }
+        
+        setError(errorMessage);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
+    
+    if (files && files.length > 0) {
       const newImages: ServiceImage[] = [];
-      Array.from(files).forEach(file => {
+      let loadedCount = 0;
+      const totalFiles = files.length;
+      
+      Array.from(files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = (e) => {
+          loadedCount++;
           newImages.push({
             file,
             preview: e.target?.result as string,
           });
-          if (newImages.length === files.length) {
-            setServiceImages([...serviceImages, ...newImages]);
+          if (loadedCount === totalFiles) {
+            setServiceImages((prev) => {
+              const updated = [...prev, ...newImages];
+              return updated;
+            });
           }
+        };
+        reader.onerror = (error) => {
         };
         reader.readAsDataURL(file);
       });
     }
+    // Reset input value to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const handleUploadClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't prevent default if clicking directly on the input
+    if ((e.target as HTMLElement).tagName === 'INPUT') {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent multiple rapid clicks
+    if (loading) {
+      return;
+    }
+    
+    // Use requestAnimationFrame to ensure the click happens properly
+    requestAnimationFrame(() => {
+      if (serviceImageInputRef.current) {
+        try {
+          serviceImageInputRef.current.click();
+        } catch (error) {
+          // Ignore click errors
+        }
+      }
+    });
   };
 
   const handleRemoveImage = (index: number) => {
@@ -134,7 +270,7 @@ const ProviderServiceUpload: React.FC = () => {
 
   const handleSubmit = async () => {
     // Validation
-    if (!serviceData.title || !serviceData.description || !serviceData.category || !serviceData.basePrice) {
+    if (!serviceData.title || !serviceData.description || !serviceData.basePrice) {
       setError('Please fill all required fields');
       return;
     }
@@ -144,44 +280,83 @@ const ProviderServiceUpload: React.FC = () => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('providerId', user?.id || '');
-      formData.append('title', serviceData.title);
-      formData.append('description', serviceData.description);
-      formData.append('category', serviceData.category);
-      formData.append('basePrice', serviceData.basePrice);
-      formData.append('expertiseLevel', serviceData.expertiseLevel);
-      formData.append('estimatedDuration', serviceData.estimatedDuration);
-      formData.append('serviceArea', serviceData.serviceArea);
-      formData.append('tags', JSON.stringify(serviceData.tags));
-      
-      // Upload service images
-      serviceImages.forEach((image, index) => {
-        if (image.file) {
-          formData.append(`serviceImage${index}`, image.file);
-        }
-      });
+    // Validate service area
+    if (!serviceData.serviceArea || serviceData.serviceArea.trim() === '') {
+      setError('Please provide service area location');
+      return;
+    }
 
-      const response = await fetch('http://localhost:8080/api/providers/services/upload', {
+    if (!provider?.id && !user?.id) {
+      setError('Session expired. Please login again.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      // Use new dynamic service API
+      const providerId = provider?.id || user?.id || '';
+      const servicePayload = {
+        providerId,
+        serviceName: serviceData.title,
+        description: serviceData.description,
+        category: serviceData.category,
+        basePrice: parseFloat(serviceData.basePrice),
+        price: parseFloat(serviceData.basePrice),
+        priceUnit: 'per service',
+        serviceArea: serviceData.serviceArea,
+        serviceAreas: serviceData.serviceArea ? [serviceData.serviceArea] : [],
+        address: serviceData.serviceArea,
+        city: liveLocation?.city || manualLocation || '',
+        pincode: liveLocation?.pincode || '',
+        availableDays: availability.availableDays,
+        availableFrom: availability.availableFrom,
+        availableTo: availability.availableTo,
+        isAvailableNow: availability.isAvailableNow,
+        allowDirectCall: contactOptions.allowDirectCall,
+        allowWhatsApp: contactOptions.allowWhatsApp,
+        allowInAppChat: contactOptions.allowInAppChat,
+        serviceRadius: 5, // Default 5km
+        latitude: liveLocation?.latitude,
+        longitude: liveLocation?.longitude,
+        tags: serviceData.tags,
+      };
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8080/api/services/create', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify(servicePayload),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      let errorMessage = '';
+      if (!response.ok) {
+        try {
+          data = await response.json();
+          errorMessage = data?.message || data?.error || '';
+        } catch (error) {
+          const errorText = await response.text();
+          errorMessage = errorText;
+        }
+        setError(errorMessage || 'Failed to upload service. Please try again.');
+        return;
+      }
+      
+      data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.data) {
         setSuccess(true);
         setError('');
         setTimeout(() => {
           navigate('/provider-dashboard');
         }, 2000);
       } else {
-        setError(data.message || 'Service upload failed');
+        const errorMsg = data.message || data.error || 'Service upload failed';
+        setError(errorMsg);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
@@ -312,19 +487,14 @@ const ProviderServiceUpload: React.FC = () => {
 
               <Grid item xs={12} sm={6}>
                 <TextField
-                  select
                   fullWidth
-                  label="Service Category"
+                  label="Category (Auto-detected)"
                   value={serviceData.category}
                   onChange={(e) => handleChange('category', e.target.value)}
-                  required
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  placeholder="Category will be auto-detected from service name"
+                  helperText="Category is automatically assigned based on similar services"
+                  disabled={!!serviceData.category}
+                />
               </Grid>
 
               <Grid item xs={12} sm={6}>
@@ -362,7 +532,7 @@ const ProviderServiceUpload: React.FC = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <AttachMoney />
+                        <Typography sx={{ fontSize: '1.2rem', fontWeight: 600, color: '#667eea' }}>₹</Typography>
                       </InputAdornment>
                     ),
                   }}
@@ -381,13 +551,13 @@ const ProviderServiceUpload: React.FC = () => {
                   }}
                 >
                   <Typography variant="caption" color="text.secondary">
-                    Customer will see (with 20% commission):
+                    Customer will see (with 10% commission):
                   </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#667eea' }}>
-                    ₹{serviceData.basePrice ? Math.round(parseFloat(serviceData.basePrice) * 1.2) : 0}
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#667eea', fontFamily: '"Poppins", sans-serif' }}>
+                    ₹{serviceData.basePrice ? Math.round(parseFloat(serviceData.basePrice) * 1.1).toLocaleString('en-IN') : '0'}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Your earnings: ₹{serviceData.basePrice || 0}
+                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"Poppins", sans-serif' }}>
+                    Your earnings: ₹{serviceData.basePrice ? parseFloat(serviceData.basePrice).toLocaleString('en-IN') : '0'}
                   </Typography>
                 </Paper>
               </Grid>
@@ -403,65 +573,364 @@ const ProviderServiceUpload: React.FC = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Service Area"
-                  value={serviceData.serviceArea}
-                  onChange={(e) => handleChange('serviceArea', e.target.value)}
-                  placeholder="e.g., Patna, Boring Road"
-                  helperText="Where do you provide this service?"
-                />
-              </Grid>
-
-              {/* Tags */}
+              {/* Tags Section */}
               <Grid item xs={12}>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
                   Tags (Optional)
                 </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Add Tags"
-                    value={currentTag}
-                    onChange={(e) => setCurrentTag(e.target.value)}
-                    placeholder="e.g., Emergency, 24/7, Certified"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="outlined"
-                    onClick={handleAddTag}
-                    startIcon={<Add />}
-                    sx={{
-                      minWidth: 120,
-                      borderColor: '#667eea',
-                      color: '#667eea',
-                      '&:hover': { borderColor: '#764ba2', bgcolor: 'rgba(102,126,234,0.08)' },
-                    }}
-                  >
-                    Add
-                  </Button>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
                   {serviceData.tags.map((tag, index) => (
                     <Chip
                       key={index}
                       label={tag}
-                      onDelete={() => handleRemoveTag(tag)}
+                      onDelete={() => {
+                        const newTags = serviceData.tags.filter((_, i) => i !== index);
+                        handleChange('tags', newTags);
+                      }}
                       color="primary"
-                      sx={{ bgcolor: '#667eea' }}
+                      variant="outlined"
                     />
                   ))}
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Add Tag"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && tagInput.trim()) {
+                        e.preventDefault();
+                        if (!serviceData.tags.includes(tagInput.trim())) {
+                          handleChange('tags', [...serviceData.tags, tagInput.trim()]);
+                        }
+                        setTagInput('');
+                      }
+                    }}
+                    placeholder="e.g., emergency, 24/7, certified"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Label />
+                        </InputAdornment>
+                      ),
+                    }}
+                    helperText="Press Enter to add tag. Tags help customers find your service."
+                  />
+                  <Button
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={() => {
+                      if (tagInput.trim() && !serviceData.tags.includes(tagInput.trim())) {
+                        handleChange('tags', [...serviceData.tags, tagInput.trim()]);
+                        setTagInput('');
+                      }
+                    }}
+                    sx={{ minWidth: 100 }}
+                  >
+                    Add
+                  </Button>
+                </Box>
+              </Grid>
+
+              {/* Contact Options */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                  Contact Options
+                </Typography>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={contactOptions.allowDirectCall}
+                        onChange={(e) => setContactOptions({ ...contactOptions, allowDirectCall: e.target.checked })}
+                        icon={<Phone />}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Phone sx={{ fontSize: 20 }} />
+                        <Typography>Allow Direct Phone Calls</Typography>
+                      </Box>
+                    }
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={contactOptions.allowWhatsApp}
+                        onChange={(e) => setContactOptions({ ...contactOptions, allowWhatsApp: e.target.checked })}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <WhatsApp sx={{ fontSize: 20, color: '#25D366' }} />
+                        <Typography>Allow WhatsApp Contact</Typography>
+                      </Box>
+                    }
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={contactOptions.allowInAppChat}
+                        onChange={(e) => setContactOptions({ ...contactOptions, allowInAppChat: e.target.checked })}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chat sx={{ fontSize: 20 }} />
+                        <Typography>Allow In-App Chat</Typography>
+                      </Box>
+                    }
+                  />
+                </FormGroup>
+              </Grid>
+
+              {/* Availability */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                  Availability
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      type="time"
+                      label="Available From"
+                      value={availability.availableFrom}
+                      onChange={(e) => setAvailability({ ...availability, availableFrom: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AccessTime />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      type="time"
+                      label="Available To"
+                      value={availability.availableTo}
+                      onChange={(e) => setAvailability({ ...availability, availableTo: e.target.value })}
+                      InputLabelProps={{ shrink: true }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AccessTime />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={availability.isAvailableNow}
+                          onChange={(e) => setAvailability({ ...availability, isAvailableNow: e.target.checked })}
+                        />
+                      }
+                      label="Available for immediate booking"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Available Days:
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                        <Chip
+                          key={day}
+                          label={day.substring(0, 3)}
+                          onClick={() => {
+                            const days = availability.availableDays;
+                            if (days.includes(day)) {
+                              setAvailability({
+                                ...availability,
+                                availableDays: days.filter((d) => d !== day),
+                              });
+                            } else {
+                              setAvailability({
+                                ...availability,
+                                availableDays: [...days, day],
+                              });
+                            }
+                          }}
+                          color={availability.availableDays.includes(day) ? 'primary' : 'default'}
+                          variant={availability.availableDays.includes(day) ? 'filled' : 'outlined'}
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              {/* Service Area with Location Options */}
+              <Grid item xs={12}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+                  Service Area
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Button
+                      variant={locationMethod === 'live' ? 'contained' : 'outlined'}
+                      startIcon={loading && locationMethod === 'live' ? <CircularProgress size={16} sx={{ color: 'inherit' }} /> : <MyLocation />}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (loading || locationLoading) {
+                          return;
+                        }
+                        setLocationMethod('live');
+                        if (!liveLocation) {
+                          getCurrentLocation();
+                        } else {
+                          setServiceData({
+                            ...serviceData,
+                            serviceArea: liveLocation.address,
+                          });
+                        }
+                      }}
+                      disabled={false}
+                      sx={{
+                        flex: 1,
+                        textTransform: 'none',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 600,
+                        bgcolor: locationMethod === 'live' ? '#667eea' : 'transparent',
+                        borderColor: '#667eea',
+                        color: locationMethod === 'live' ? 'white' : '#667eea',
+                        '&:hover': {
+                          bgcolor: locationMethod === 'live' ? '#5568d3' : 'rgba(102,126,234,0.08)',
+                          borderColor: '#667eea',
+                        },
+                        '&:disabled': {
+                          bgcolor: 'rgba(0,0,0,0.12)',
+                          color: 'rgba(0,0,0,0.26)',
+                        },
+                      }}
+                    >
+                      {locationLoading && locationMethod === 'live' ? (
+                        <>
+                          <CircularProgress size={16} sx={{ mr: 1 }} />
+                          Getting Location...
+                        </>
+                      ) : (
+                        'Use Live Location'
+                      )}
+                    </Button>
+                    <Button
+                      variant={locationMethod === 'manual' ? 'contained' : 'outlined'}
+                      startIcon={<EditLocation />}
+                      onClick={() => setLocationMethod('manual')}
+                      sx={{
+                        flex: 1,
+                        textTransform: 'none',
+                        fontFamily: '"Poppins", sans-serif',
+                        fontWeight: 600,
+                        bgcolor: locationMethod === 'manual' ? '#667eea' : 'transparent',
+                        borderColor: '#667eea',
+                        color: locationMethod === 'manual' ? 'white' : '#667eea',
+                        '&:hover': {
+                          bgcolor: locationMethod === 'manual' ? '#5568d3' : 'rgba(102,126,234,0.08)',
+                          borderColor: '#667eea',
+                        },
+                      }}
+                    >
+                      Enter Manually
+                    </Button>
+                  </Box>
+
+                  {locationMethod === 'live' ? (
+                    <Box>
+                      {liveLocation ? (
+                        <Paper
+                          sx={{
+                            p: 2,
+                            bgcolor: 'rgba(76,175,80,0.08)',
+                            border: '2px solid #4CAF50',
+                            borderRadius: 2,
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <LocationOn sx={{ color: '#4CAF50', mr: 1 }} />
+                            <Typography variant="body1" sx={{ fontWeight: 600, color: '#1a1a1a', fontFamily: '"Poppins", sans-serif' }}>
+                              Current Location
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ color: '#666', fontFamily: '"Poppins", sans-serif', mb: 1 }}>
+                            {liveLocation.address}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#999', fontFamily: '"Poppins", sans-serif' }}>
+                            Coordinates: {liveLocation.latitude.toFixed(6)}, {liveLocation.longitude.toFixed(6)}
+                          </Typography>
+                          <Button
+                            size="small"
+                            startIcon={<MyLocation />}
+                            onClick={getCurrentLocation}
+                            sx={{
+                              mt: 1,
+                              textTransform: 'none',
+                              fontFamily: '"Poppins", sans-serif',
+                              color: '#4CAF50',
+                            }}
+                          >
+                            Refresh Location
+                          </Button>
+                        </Paper>
+                      ) : (
+                        <Paper
+                          sx={{
+                            p: 3,
+                            textAlign: 'center',
+                            border: '2px dashed #667eea',
+                            borderRadius: 2,
+                            bgcolor: 'rgba(102,126,234,0.05)',
+                          }}
+                        >
+                          <MyLocation sx={{ fontSize: 48, color: '#667eea', mb: 2 }} />
+                          <Typography variant="body1" sx={{ mb: 2, fontFamily: '"Poppins", sans-serif' }}>
+                            Click "Use Live Location" to get your current location
+                          </Typography>
+                        </Paper>
+                      )}
+                    </Box>
+                  ) : (
+                    <TextField
+                      fullWidth
+                      label="Service Area"
+                      value={manualLocation}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setManualLocation(value);
+                        setServiceData({
+                          ...serviceData,
+                          serviceArea: value,
+                        });
+                      }}
+                      placeholder="e.g., Patna, Boring Road, Bihar"
+                      helperText="Enter the area where you provide this service"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LocationOn />
+                          </InputAdornment>
+                        ),
+                      }}
+                      required
+                    />
+                  )}
                 </Box>
               </Grid>
 
@@ -474,31 +943,60 @@ const ProviderServiceUpload: React.FC = () => {
               </Grid>
 
               <Grid item xs={12}>
-                <Paper
+                <Box
+                  component="div"
                   sx={{
                     p: 3,
                     textAlign: 'center',
                     border: '2px dashed #667eea',
+                    borderRadius: 2,
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: 'rgba(102,126,234,0.05)' },
+                    userSelect: 'none',
+                    position: 'relative',
+                    bgcolor: 'white',
+                    '&:hover': { 
+                      bgcolor: 'rgba(102,126,234,0.05)',
+                      borderColor: '#764ba2',
+                    },
+                    '&:active': {
+                      bgcolor: 'rgba(102,126,234,0.1)',
+                    },
+                    transition: 'all 0.3s ease',
                   }}
-                  component="label"
+                  onClick={handleUploadClick}
                 >
                   <PhotoCamera sx={{ fontSize: 60, color: '#667eea', mb: 2 }} />
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1, fontFamily: '"Poppins", sans-serif', color: '#1a1a1a' }}>
                     Upload Service Photos
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Show your previous work, tools, or setup (Max 5 images)
+                  <Typography variant="caption" color="text.secondary" sx={{ fontFamily: '"Poppins", sans-serif', display: 'block', mb: 0.5 }}>
+                    Show your previous work, tools, or setup
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontFamily: '"Poppins", sans-serif', color: '#667eea', fontWeight: 600 }}>
+                    Max 5 images • Click to browse
                   </Typography>
                   <input
                     type="file"
-                    hidden
+                    ref={serviceImageInputRef}
+                    style={{ 
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0,
+                      cursor: 'pointer',
+                      zIndex: 2,
+                      fontSize: 0,
+                    }}
                     accept="image/*"
                     multiple
                     onChange={handleImageUpload}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   />
-                </Paper>
+                </Box>
 
                 {serviceImages.length > 0 && (
                   <Grid container spacing={2} sx={{ mt: 2 }}>
@@ -536,7 +1034,7 @@ const ProviderServiceUpload: React.FC = () => {
               variant="contained"
               size="large"
               onClick={handleSubmit}
-              disabled={loading}
+                      disabled={false}
               sx={{
                 mt: 4,
                 py: 2,

@@ -16,6 +16,8 @@ public class BookingRequestDTO {
     
     @NotBlank(message = "Service is required")
     private String service;
+
+    private String serviceId;
     
     @NotBlank(message = "Address is required")
     private String address;

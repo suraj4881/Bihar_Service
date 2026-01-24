@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Box,
   Container,
   Typography,
   Card,
   CardContent,
+  Chip,
   Button,
   TextField,
   Grid,
@@ -15,8 +17,6 @@ import {
   Stepper,
   Step,
   StepLabel,
-  AppBar,
-  Toolbar,
   IconButton,
   InputAdornment,
   Paper,
@@ -37,7 +37,7 @@ import {
   CheckCircle,
   MyLocation,
 } from '@mui/icons-material';
-import Logo from '../components/Logo';
+import AppBar from '../components/AppBar';
 import { BIHAR_CITIES } from '../utils/constants';
 import { formatPrice, getCurrentLocation } from '../utils/helpers';
 
@@ -47,12 +47,33 @@ interface Provider {
   skill: string;
   price: number;
   profilePhoto?: string;
+  providerId?: string;
+  serviceId?: string;
+}
+
+interface BookingDetail {
+  id: string;
+  serviceName?: string;
+  service?: string;
+  serviceCategory?: string;
+  providerId: string;
+  customerName?: string;
+  customerPhone?: string;
+  status: string;
+  price?: number;
+  totalAmount?: number;
+  address?: string;
+  city?: string;
+  pincode?: string;
+  scheduledDate?: string;
+  bookingDate?: string;
 }
 
 const BookingPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
+  const { user } = useAuth();
   
   // ✅ Sync language on mount from localStorage
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,6 +87,13 @@ const BookingPage: React.FC = () => {
   }, []);
   
   const [provider, setProvider] = useState<Provider | null>(null);
+  const [bookingDetail, setBookingDetail] = useState<BookingDetail | null>(null);
+  const maskPhone = (phone?: string) => {
+    if (!phone) return 'N/A';
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 6) return phone;
+    return `${digits.slice(0, 2)}XXXX${digits.slice(-2)}`;
+  };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -85,25 +113,57 @@ const BookingPage: React.FC = () => {
   });
 
   useEffect(() => {
-    loadProvider();
+    loadBookingOrService();
   }, [id]);
 
-  const loadProvider = async () => {
+  const loadBookingOrService = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/providers/${id}`);
-      const data = await response.json();
-      if (data.success) {
-        setProvider(data.data);
-        setBookingData(prev => ({ ...prev, serviceType: data.data.skill }));
+      if (id) {
+        const bookingResponse = await fetch(`http://localhost:8080/api/bookings/${id}`);
+        const bookingData = await bookingResponse.json();
+        if (bookingData.success && bookingData.data) {
+          setBookingDetail(bookingData.data);
+          setProvider(null);
+          setLoading(false);
+          return;
+        }
       }
+
+      const serviceResponse = await fetch(`http://localhost:8080/api/services/${id}`);
+      const serviceData = await serviceResponse.json();
+      if (!serviceData.success || !serviceData.data) {
+        setProvider(null);
+        setError('Failed to load service details');
+        return;
+      }
+
+      const service = serviceData.data;
+      let providerData = null;
+      if (service.providerId) {
+        const providerResponse = await fetch(`http://localhost:8080/api/users/${service.providerId}`);
+        const providerPayload = await providerResponse.json();
+        if (providerPayload.success) {
+          providerData = providerPayload.data;
+        }
+      }
+
+      const mappedProvider: Provider = {
+        id: service.id,
+        serviceId: service.id,
+        providerId: service.providerId,
+        name: providerData?.name || service.providerName || 'Provider',
+        skill: service.serviceName || service.category || 'Service',
+        price: service.finalPrice || service.basePrice || service.price || 0,
+        profilePhoto: providerData?.profilePhoto
+          ? `http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(providerData.profilePhoto)}`
+          : undefined,
+      };
+
+      setProvider(mappedProvider);
+      setBookingData(prev => ({ ...prev, serviceType: mappedProvider.skill }));
     } catch (err) {
-      setProvider({
-        id: '1',
-        name: 'Raj Kumar Sharma',
-        skill: 'Plumbing',
-        price: 650,
-      });
-      setBookingData(prev => ({ ...prev, serviceType: 'Plumbing' }));
+      setProvider(null);
+      setError('Failed to load provider details');
     } finally {
       setLoading(false);
     }
@@ -155,24 +215,48 @@ const BookingPage: React.FC = () => {
       return;
     }
 
+    if (!user?.id) {
+      setError('Please login to continue booking');
+      return;
+    }
+
+    if (!provider?.providerId || !provider?.serviceId) {
+      setError('Service details missing. Please try again.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/bookings/create', {
+      const scheduledDate = bookingData.scheduledDate
+        ? `${bookingData.scheduledDate}T${bookingData.scheduledTime || '00:00'}:00`
+        : null;
+
+      const response = await fetch('http://localhost:8080/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          providerId: id,
-          ...bookingData,
+          userId: user.id,
+          providerId: provider.providerId,
+          serviceId: provider.serviceId,
+          service: bookingData.serviceType,
+          address: bookingData.address,
+          city: bookingData.city,
+          pincode: bookingData.pincode,
+          scheduledDate,
+          price: provider.price,
+          specialInstructions: bookingData.description,
+          emergencyContact: bookingData.contactName,
+          emergencyPhone: bookingData.contactPhone,
         }),
       });
       const data = await response.json();
       
       if (data.success) {
         setSuccess('Booking created successfully!');
-        setTimeout(() => navigate('/dashboard'), 2000);
+        setTimeout(() => navigate('/customer-dashboard'), 2000);
       } else {
         setError(data.message || 'Booking failed');
       }
@@ -185,7 +269,7 @@ const BookingPage: React.FC = () => {
 
   const steps = ['Service Details', 'Schedule & Address', 'Contact & Confirm'];
 
-  if (loading && !provider) {
+  if (loading && !provider && !bookingDetail) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <CircularProgress />
@@ -193,18 +277,144 @@ const BookingPage: React.FC = () => {
     );
   }
 
+  if (bookingDetail) {
+    const displayService = bookingDetail.serviceName || bookingDetail.service || 'Service';
+    const displayAmount = bookingDetail.totalAmount ?? bookingDetail.price ?? 0;
+    const displayLocation = [bookingDetail.address, bookingDetail.city, bookingDetail.pincode]
+      .filter(Boolean)
+      .join(', ');
+    const scheduledText = bookingDetail.scheduledDate
+      ? new Date(bookingDetail.scheduledDate).toLocaleString()
+      : 'N/A';
+    const createdText = bookingDetail.bookingDate
+      ? new Date(bookingDetail.bookingDate).toLocaleString()
+      : 'N/A';
+
+    return (
+      <Box sx={{ minHeight: '100vh', bgcolor: '#F6F7FB' }}>
+        <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
+        <Container maxWidth="md" sx={{ py: 5 }}>
+          <Card sx={{ borderRadius: 4, boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+            <CardContent sx={{ p: { xs: 3, md: 5 } }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    Booking
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    {displayService}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={bookingDetail.status}
+                  color={
+                    bookingDetail.status === 'COMPLETED'
+                      ? 'success'
+                      : bookingDetail.status === 'CANCELLED'
+                        ? 'error'
+                        : bookingDetail.status === 'IN_PROGRESS'
+                          ? 'warning'
+                          : bookingDetail.status === 'CONFIRMED'
+                            ? 'info'
+                            : 'default'
+                  }
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#FBFBFD', border: '1px solid #EEF0F6' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Customer
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {bookingDetail.customerName || 'N/A'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#FBFBFD', border: '1px solid #EEF0F6' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Contact
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {maskPhone(bookingDetail.customerPhone)}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#FBFBFD', border: '1px solid #EEF0F6' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Amount
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      ₹{displayAmount}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#FBFBFD', border: '1px solid #EEF0F6' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Scheduled
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {scheduledText}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#FBFBFD', border: '1px solid #EEF0F6' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Address
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      {displayLocation || 'N/A'}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Booking ID
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {bookingDetail.id}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Created
+                  </Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {createdText}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Button variant="outlined" onClick={() => navigate('/customer-dashboard')}>
+                  Back to Dashboard
+                </Button>
+                <Button variant="contained" onClick={() => navigate('/search')}>
+                  Book Another Service
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#FAFAFA' }}>
       {/* Navigation */}
-      <AppBar position="sticky" sx={{ bgcolor: 'white', color: 'text.primary' }}>
-        <Toolbar>
-          <IconButton edge="start" onClick={() => navigate(-1)} sx={{ mr: 2 }}>
-            <ArrowBack />
-          </IconButton>
-          <Logo size="small" showText onClick={() => navigate('/')} />
-          <Box sx={{ flexGrow: 1 }} />
-        </Toolbar>
-      </AppBar>
+      <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={4}>
