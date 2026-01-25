@@ -29,6 +29,9 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  Badge,
+  Popover,
+  Divider,
   CardMedia,
   Rating,
 } from '@mui/material';
@@ -49,11 +52,14 @@ import {
   Add,
   Phone,
   Email,
+  SupportAgent,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import AppBar from '../components/AppBar';
+import SupportChatFloatingWidget from '../components/SupportChatFloatingWidget';
+import { Notification } from '../types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -75,6 +81,19 @@ const CustomerDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [tabValue, setTabValue] = useState(0);
+
+  const getBookingStatusLabel = (status?: string) => {
+    if (!status) return 'Pending';
+    if (status === 'PAYMENT_PENDING') return 'Payment Pending';
+    return status;
+  };
+
+  const getBookingStatusColor = (status?: string) => {
+    if (status === 'COMPLETED') return 'success';
+    if (status === 'CANCELLED') return 'error';
+    if (status === 'CONFIRMED') return 'info';
+    return 'warning';
+  };
   
   // ✅ Sync language on mount from localStorage (set on HomePage)
   useEffect(() => {
@@ -98,6 +117,10 @@ const CustomerDashboard: React.FC = () => {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchCustomerStats = async () => {
     if (!user?.id) return;
@@ -117,7 +140,7 @@ const CustomerDashboard: React.FC = () => {
         if (data.success && Array.isArray(data.data)) {
           const totalBookings = data.data.length;
           const activeBookings = data.data.filter((b: any) =>
-            ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)
+            ['PENDING', 'PAYMENT_PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)
           ).length;
           const completedBookings = data.data.filter((b: any) => b.status === 'COMPLETED').length;
           
@@ -154,7 +177,7 @@ const CustomerDashboard: React.FC = () => {
           setBookings(data.data);
           const totalBookings = data.data.length;
           const activeBookings = data.data.filter((b: any) =>
-            ['PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)
+            ['PENDING', 'PAYMENT_PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(b.status)
           ).length;
           const completedBookings = data.data.filter((b: any) => b.status === 'COMPLETED').length;
           setStats((prev) => ({
@@ -205,6 +228,81 @@ const CustomerDashboard: React.FC = () => {
     setTabValue(newValue);
   };
 
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+    setNotificationsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/notifications/user/${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const sortedNotifications = (data.data as Notification[]).sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setNotifications(sortedNotifications);
+          setUnreadCount(sortedNotifications.filter(n => !n.isRead).length);
+        }
+      }
+
+      const countResponse = await fetch(`http://localhost:8080/api/notifications/user/${user.id}/unread-count`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (countResponse.ok) {
+        const countData = await countResponse.json();
+        if (countData.success) {
+          setUnreadCount(countData.data || 0);
+        }
+      }
+    } catch (error) {
+      // ignore
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
+    setNotificationAnchorEl(event.currentTarget);
+  };
+
+  const handleNotificationClose = () => {
+    setNotificationAnchorEl(null);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!user?.id) return;
+    try {
+      await fetch(`http://localhost:8080/api/notifications/user/${user.id}/read-all`, {
+        method: 'PUT',
+      });
+      fetchNotifications();
+    } catch (error) {
+      // ignore
+    }
+  };
+
+  const handleNotificationItemClick = async (notification: Notification) => {
+    try {
+      if (!notification.isRead) {
+        await fetch(`http://localhost:8080/api/notifications/${notification.id}/read`, {
+          method: 'PUT',
+        });
+      }
+      fetchNotifications();
+      setTabValue(1);
+      handleNotificationClose();
+    } catch (error) {
+      // ignore
+    }
+  };
+
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -234,14 +332,53 @@ const CustomerDashboard: React.FC = () => {
     }
   }, [tabValue]);
 
+  useEffect(() => {
+    fetchCustomerStats();
+    fetchNotifications();
+  }, [user?.id]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* App Bar */}
       <AppBar variant="dashboard" position="static" title="My Dashboard" />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 45%, #3B82F6 100%)',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={7}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                Welcome back{user?.name ? `, ${user.name}` : ''}!
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Track bookings, connect with trusted providers, and get help fast.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={5} sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}>
+              <Button variant="contained" color="secondary" onClick={() => navigate('/search')} sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}>
+                Explore Services
+              </Button>
+              <Button variant="outlined" onClick={() => navigate('/support')} sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff' } }}>
+                Get Help
+              </Button>
+            </Grid>
+          </Grid>
+        </Card>
         {/* Search Bar */}
-        <Card sx={{ mb: 4, p: 2 }}>
+        <Card sx={{ mb: 4, p: 2.5, border: '1px solid', borderColor: 'divider' }}>
           <TextField
             fullWidth
             placeholder={language === 'hi' ? 'सेवाएं खोजें...' : 'Search for services...'}
@@ -256,11 +393,7 @@ const CustomerDashboard: React.FC = () => {
               ),
               endAdornment: (
                 <InputAdornment position="end">
-                  <Button
-                    variant="contained"
-                    onClick={handleSearch}
-                    sx={{ bgcolor: '#3B82F6', '&:hover': { bgcolor: '#2563EB' } }}
-                  >
+                  <Button variant="contained" onClick={handleSearch}>
                     Search
                   </Button>
                 </InputAdornment>
@@ -268,6 +401,93 @@ const CustomerDashboard: React.FC = () => {
             }}
           />
         </Card>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <Badge badgeContent={unreadCount > 0 ? unreadCount : 0} color="error">
+            <IconButton color="primary" onClick={handleNotificationClick}>
+              <Notifications />
+            </IconButton>
+          </Badge>
+          <Popover
+            open={Boolean(notificationAnchorEl)}
+            anchorEl={notificationAnchorEl}
+            onClose={handleNotificationClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            PaperProps={{
+              sx: {
+                width: 360,
+                maxHeight: 480,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: '0 18px 45px rgba(15, 23, 42, 0.16)',
+              },
+            }}
+          >
+            <Box sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Notifications</Typography>
+                {unreadCount > 0 && (
+                  <Button size="small" onClick={handleMarkAllAsRead}>
+                    Mark all read
+                  </Button>
+                )}
+              </Box>
+              <Divider sx={{ mb: 1 }} />
+              {notificationsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : notifications.length === 0 ? (
+                <Box sx={{ textAlign: 'center', p: 3 }}>
+                  <Typography variant="body2" color="text.secondary">No notifications</Typography>
+                </Box>
+              ) : (
+                <List sx={{ maxHeight: 380, overflow: 'auto' }}>
+                  {notifications.map((notification) => (
+                    <React.Fragment key={notification.id}>
+                      <ListItem
+                        button
+                        onClick={() => handleNotificationItemClick(notification)}
+                        sx={{
+                          bgcolor: notification.isRead ? 'transparent' : '#e3f2fd',
+                          borderRadius: 1,
+                          mb: 0.5,
+                        }}
+                      >
+                        <ListItemIcon>
+                          {notification.type === 'BOOKING' && <Assignment />}
+                          {notification.type === 'REVIEW' && <Star />}
+                          {!notification.type && <Notifications />}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle2" sx={{ fontWeight: notification.isRead ? 400 : 700 }}>
+                              {notification.title}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography variant="body2" color="text.secondary">
+                              {notification.message}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                      <Divider />
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </Box>
+          </Popover>
+        </Box>
 
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -400,10 +620,10 @@ const CustomerDashboard: React.FC = () => {
                                   </>
                                 }
                               />
-                              <Chip 
-                                label={booking.status || 'Pending'} 
-                                color={booking.status === 'COMPLETED' ? 'success' : booking.status === 'CANCELLED' ? 'error' : 'warning'} 
-                                size="small" 
+                              <Chip
+                                label={getBookingStatusLabel(booking.status)}
+                                color={getBookingStatusColor(booking.status)}
+                                size="small"
                               />
                             </ListItem>
                           ))}
@@ -444,6 +664,15 @@ const CustomerDashboard: React.FC = () => {
                       onClick={() => setTabValue(3)}
                     >
                       View History
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<SupportAgent />}
+                      onClick={() => navigate('/support')}
+                      sx={{ mt: 2 }}
+                    >
+                      Help & Support
                     </Button>
                   </CardContent>
                 </Card>
@@ -524,14 +753,10 @@ const CustomerDashboard: React.FC = () => {
                             </TableCell>
                             <TableCell>₹{booking.totalAmount || booking.price || 0}</TableCell>
                             <TableCell>
-                              <Chip 
-                                label={booking.status || 'Pending'} 
-                                color={
-                                  booking.status === 'COMPLETED' ? 'success' : 
-                                  booking.status === 'CANCELLED' ? 'error' : 
-                                  'warning'
-                                } 
-                                size="small" 
+                              <Chip
+                                label={getBookingStatusLabel(booking.status)}
+                                color={getBookingStatusColor(booking.status)}
+                                size="small"
                               />
                             </TableCell>
                             <TableCell>
@@ -695,6 +920,7 @@ const CustomerDashboard: React.FC = () => {
           </TabPanel>
         </Paper>
       </Container>
+      <SupportChatFloatingWidget userId={user?.id || ''} userRole="CUSTOMER" userName={user?.name || 'Customer'} />
     </Box>
   );
 };

@@ -21,6 +21,8 @@ import {
   Paper,
   Chip,
   Button,
+  Switch,
+  FormControlLabel,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -51,6 +53,19 @@ import {
   Download,
   PictureAsPdf,
   ShoppingCart,
+  SupportAgent,
+  Visibility,
+  TouchApp,
+  Call,
+  Group,
+  ContentCopy,
+  Public,
+  Devices,
+  Language,
+  DesktopWindows,
+  AccessTime,
+  Link,
+  Person,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -101,6 +116,24 @@ const AdminDashboard: React.FC = () => {
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [supportTicketsLoading, setSupportTicketsLoading] = useState(false);
+  const [supportTicketStats, setSupportTicketStats] = useState({ total: 0, open: 0, closed: 0 });
+  const [analyticsSummary, setAnalyticsSummary] = useState({ views: 0, clicks: 0, calls: 0, uniqueVisitors: 0, totalEvents: 0 });
+  const [analyticsTraffic, setAnalyticsTraffic] = useState<any[]>([]);
+  const [analyticsDevices, setAnalyticsDevices] = useState({ deviceTypes: {}, os: {}, browsers: {} });
+  const [analyticsRecent, setAnalyticsRecent] = useState<any[]>([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsDetailOpen, setAnalyticsDetailOpen] = useState(false);
+  const [selectedAnalyticsEvent, setSelectedAnalyticsEvent] = useState<any | null>(null);
+  const [autoRefreshPayments, setAutoRefreshPayments] = useState(true);
+  const [paymentVerifyDialogOpen, setPaymentVerifyDialogOpen] = useState(false);
+  const [paymentVerifyNote, setPaymentVerifyNote] = useState('');
+  const [paymentVerifyTxnInput, setPaymentVerifyTxnInput] = useState('');
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+  const [paymentVerifyDecision, setPaymentVerifyDecision] = useState<'approve' | 'reject'>('approve');
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [withdrawalsLoading, setWithdrawalsLoading] = useState(false);
   const [commissionStats, setCommissionStats] = useState<any>({});
   const [commissionRate, setCommissionRate] = useState(10);
   const [stats, setStats] = useState({
@@ -121,6 +154,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchSupportTicketsSummary();
     if (tabValue === 1) {
       fetchUsers();
     } else if (tabValue === 2) {
@@ -135,8 +169,21 @@ const AdminDashboard: React.FC = () => {
       fetchPayments();
     } else if (tabValue === 7) {
       fetchBookings();
+    } else if (tabValue === 8) {
+      fetchSupportTickets();
+    } else if (tabValue === 9) {
+      fetchWithdrawals();
     }
   }, [tabValue]);
+
+  useEffect(() => {
+    if (tabValue !== 6) return;
+    if (!autoRefreshPayments) return;
+    const intervalId = setInterval(() => {
+      fetchPayments();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [tabValue, autoRefreshPayments]);
   
   const fetchPendingServices = async () => {
     setPendingServicesLoading(true);
@@ -271,6 +318,8 @@ const AdminDashboard: React.FC = () => {
       fetchPayments();
     } else if (newValue === 7) {
       fetchBookings();
+    } else if (newValue === 8) {
+      fetchSupportTickets();
     }
   };
   
@@ -318,6 +367,35 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleVerifyPayment = async (paymentId: string, transactionId: string, approved: boolean, note: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/admin/transactions/payments/${paymentId}/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ transactionId, approved, note }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchPayments();
+        fetchBookings();
+      }
+    } catch (error) {
+      // ignore verification errors
+    }
+  };
+
+  const openPaymentVerifyDialog = (payment: any, decision: 'approve' | 'reject') => {
+    setSelectedPayment(payment);
+    setPaymentVerifyDecision(decision);
+    setPaymentVerifyNote('');
+    setPaymentVerifyTxnInput('');
+    setPaymentVerifyDialogOpen(true);
+  };
+
   const fetchBookings = async () => {
     setBookingsLoading(true);
     try {
@@ -340,23 +418,110 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchAnalytics = async () => {
+  const fetchSupportTickets = async () => {
+    setSupportTicketsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/admin/commission/stats', {
+      const response = await fetch('http://localhost:8080/api/support/tickets', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
       const data = await response.json();
       if (data.success && data.data) {
-        setCommissionStats(data.data);
-        if (data.data.averageCommissionRate) {
-          setCommissionRate(data.data.averageCommissionRate);
+        setSupportTickets(data.data);
+      } else {
+        setSupportTickets([]);
+      }
+    } catch (error) {
+      setSupportTickets([]);
+    } finally {
+      setSupportTicketsLoading(false);
+    }
+  };
+
+  const fetchSupportTicketsSummary = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8080/api/support/tickets', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        const total = data.data.length;
+        const open = data.data.filter((ticket: any) => ticket.status !== 'CLOSED').length;
+        const closed = data.data.filter((ticket: any) => ticket.status === 'CLOSED').length;
+        setSupportTicketStats({ total, open, closed });
+      }
+    } catch (error) {
+      setSupportTicketStats({ total: 0, open: 0, closed: 0 });
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const token = localStorage.getItem('token');
+      const [commissionRes, summaryRes, trafficRes, devicesRes, recentRes] = await Promise.all([
+        fetch('http://localhost:8080/api/admin/commission/stats', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }),
+        fetch('http://localhost:8080/api/analytics/summary?days=7'),
+        fetch('http://localhost:8080/api/analytics/traffic?days=7'),
+        fetch('http://localhost:8080/api/analytics/devices?days=7'),
+        fetch('http://localhost:8080/api/analytics/recent?limit=25'),
+      ]);
+
+      const commissionData = await commissionRes.json();
+      if (commissionData.success && commissionData.data) {
+        setCommissionStats(commissionData.data);
+        if (commissionData.data.averageCommissionRate) {
+          setCommissionRate(commissionData.data.averageCommissionRate);
         }
+      }
+
+      const summaryData = await summaryRes.json();
+      if (summaryData.success && summaryData.data) {
+        setAnalyticsSummary(summaryData.data);
+      }
+
+      const trafficData = await trafficRes.json();
+      if (trafficData.success && trafficData.data) {
+        setAnalyticsTraffic(trafficData.data);
+      }
+
+      const devicesData = await devicesRes.json();
+      if (devicesData.success && devicesData.data) {
+        setAnalyticsDevices(devicesData.data);
+      }
+
+      const recentData = await recentRes.json();
+      if (recentData.success && recentData.data) {
+        setAnalyticsRecent(recentData.data);
       }
     } catch (error) {
       // Handle error
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const fetchWithdrawals = async () => {
+    setWithdrawalsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/withdrawals');
+      const data = await response.json();
+      if (data.success && data.data) {
+        setWithdrawals(data.data);
+      } else {
+        setWithdrawals([]);
+      }
+    } catch (error) {
+      setWithdrawals([]);
+    } finally {
+      setWithdrawalsLoading(false);
     }
   };
   
@@ -640,13 +805,50 @@ const AdminDashboard: React.FC = () => {
   const selfieImage = selectedKYCRequest
     ? getKycImageUrls('selfie', selectedKYCRequest.userId, selectedKYCRequest.selfieImageUrl)
     : null;
+  const trafficMax = Math.max(
+    1,
+    ...analyticsTraffic.map((row) => Math.max(row.views || 0, row.clicks || 0, row.calls || 0))
+  );
+  const deviceTypeEntries = Object.entries((analyticsDevices as any).deviceTypes || {});
+  const osEntries = Object.entries((analyticsDevices as any).os || {});
+  const browserEntries = Object.entries((analyticsDevices as any).browsers || {});
+  const deviceTotal = deviceTypeEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+  const osTotal = osEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+  const browserTotal = browserEntries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* App Bar */}
       <AppBar variant="dashboard" position="static" title="Admin Dashboard" />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #2563EB 100%)',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                Admin Control Center
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Monitor KYC, services, bookings, and support tickets in one place.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}>
+              <Button variant="contained" color="secondary" onClick={() => navigate('/support-dashboard')} sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}>
+                Support Dashboard
+              </Button>
+              <Button variant="outlined" onClick={() => navigate('/search')} sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff' } }}>
+                View Marketplace
+              </Button>
+            </Grid>
+          </Grid>
+        </Card>
         {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
@@ -720,6 +922,26 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)', color: 'white' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                      {supportTicketsLoading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : supportTicketStats.open}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                      Open Support Tickets
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.85, display: 'block', mt: 0.5 }}>
+                      Closed: {supportTicketStats.closed}
+                    </Typography>
+                  </Box>
+                  <SupportAgent sx={{ fontSize: 40, opacity: 0.85 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
         {/* Tabs */}
@@ -733,6 +955,8 @@ const AdminDashboard: React.FC = () => {
             <Tab icon={<AccountBalanceWallet />} label="Wallet Transactions" iconPosition="start" />
             <Tab icon={<Payment />} label="Payments" iconPosition="start" />
             <Tab icon={<ShoppingCart />} label="Bookings/Orders" iconPosition="start" />
+            <Tab icon={<SupportAgent />} label="Support Tickets" iconPosition="start" />
+            <Tab icon={<AccountBalanceWallet />} label="Withdrawals" iconPosition="start" />
           </Tabs>
 
           {/* Overview Tab */}
@@ -1200,6 +1424,283 @@ const AdminDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
+              {analyticsLoading ? (
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                </Grid>
+              ) : (
+                <>
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
+                          Traffic Summary (Last 7 Days)
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(37, 99, 235, 0.08)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar sx={{ bgcolor: '#2563EB', width: 36, height: 36 }}>
+                                <Visibility fontSize="small" />
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Views</Typography>
+                                <Typography variant="h5" sx={{ fontWeight: 700 }}>{analyticsSummary.views}</Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar sx={{ bgcolor: '#10B981', width: 36, height: 36 }}>
+                                <TouchApp fontSize="small" />
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Clicks</Typography>
+                                <Typography variant="h5" sx={{ fontWeight: 700 }}>{analyticsSummary.clicks}</Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar sx={{ bgcolor: '#F59E0B', width: 36, height: 36 }}>
+                                <Call fontSize="small" />
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Calls</Typography>
+                                <Typography variant="h5" sx={{ fontWeight: 700 }}>{analyticsSummary.calls}</Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6} md={3}>
+                            <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(15, 23, 42, 0.06)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Avatar sx={{ bgcolor: '#0F172A', width: 36, height: 36 }}>
+                                <Group fontSize="small" />
+                              </Avatar>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Unique Visitors</Typography>
+                                <Typography variant="h5" sx={{ fontWeight: 700 }}>{analyticsSummary.uniqueVisitors}</Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                            Traffic Trend
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Chip label="Views" size="small" sx={{ bgcolor: '#2563EB', color: 'white' }} />
+                            <Chip label="Clicks" size="small" sx={{ bgcolor: '#10B981', color: 'white' }} />
+                            <Chip label="Calls" size="small" sx={{ bgcolor: '#F59E0B', color: 'white' }} />
+                          </Box>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            gap: 2,
+                            alignItems: 'flex-end',
+                            height: 240,
+                            p: 2,
+                            borderRadius: 3,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            backgroundImage: 'linear-gradient(to top, rgba(15,23,42,0.05) 1px, transparent 1px)',
+                            backgroundSize: '100% 24px',
+                          }}
+                        >
+                          {analyticsTraffic.map((row: any) => (
+                            <Box key={row.date} sx={{ flex: 1, textAlign: 'center' }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: 0.8, height: 160 }}>
+                                <Box sx={{ width: 10, height: `${(row.views || 0) / trafficMax * 140 + 10}px`, bgcolor: '#2563EB', borderRadius: 2 }} />
+                                <Box sx={{ width: 10, height: `${(row.clicks || 0) / trafficMax * 140 + 10}px`, bgcolor: '#10B981', borderRadius: 2 }} />
+                                <Box sx={{ width: 10, height: `${(row.calls || 0) / trafficMax * 140 + 10}px`, bgcolor: '#F59E0B', borderRadius: 2 }} />
+                              </Box>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(row.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
+                          Device Types
+                        </Typography>
+                        {deviceTypeEntries.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary">No data</Typography>
+                        ) : (
+                          deviceTypeEntries.map(([key, value]) => (
+                            <Box key={key} sx={{ mb: 1.5 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2">{key}</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{value as any}</Typography>
+                              </Box>
+                              <Box sx={{ height: 6, borderRadius: 10, bgcolor: 'rgba(15,23,42,0.08)', mt: 0.5 }}>
+                                <Box sx={{ height: 6, borderRadius: 10, bgcolor: '#2563EB', width: `${deviceTotal ? (Number(value) / deviceTotal) * 100 : 0}%` }} />
+                              </Box>
+                            </Box>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
+                          Operating Systems
+                        </Typography>
+                        {osEntries.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary">No data</Typography>
+                        ) : (
+                          osEntries.map(([key, value]) => (
+                            <Box key={key} sx={{ mb: 1.5 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2">{key}</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{value as any}</Typography>
+                              </Box>
+                              <Box sx={{ height: 6, borderRadius: 10, bgcolor: 'rgba(15,23,42,0.08)', mt: 0.5 }}>
+                                <Box sx={{ height: 6, borderRadius: 10, bgcolor: '#10B981', width: `${osTotal ? (Number(value) / osTotal) * 100 : 0}%` }} />
+                              </Box>
+                            </Box>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
+                          Browsers
+                        </Typography>
+                        {browserEntries.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary">No data</Typography>
+                        ) : (
+                          browserEntries.map(([key, value]) => (
+                            <Box key={key} sx={{ mb: 1.5 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2">{key}</Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{value as any}</Typography>
+                              </Box>
+                              <Box sx={{ height: 6, borderRadius: 10, bgcolor: 'rgba(15,23,42,0.08)', mt: 0.5 }}>
+                                <Box sx={{ height: 6, borderRadius: 10, bgcolor: '#F59E0B', width: `${browserTotal ? (Number(value) / browserTotal) * 100 : 0}%` }} />
+                              </Box>
+                            </Box>
+                          ))
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Card>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
+                          Recent Traffic Events
+                        </Typography>
+                        {analyticsRecent.length === 0 ? (
+                          <Alert severity="info">No recent analytics data</Alert>
+                        ) : (
+                          <TableContainer
+                            sx={{
+                              borderRadius: 3,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 700 }}>Time</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>Page</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>Target</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>IP</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>Device</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>Browser</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>OS</TableCell>
+                                  <TableCell sx={{ fontWeight: 700 }}>User</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, textAlign: 'right' }}>Value</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {analyticsRecent.map((event: any) => (
+                                  <TableRow
+                                    key={event.id}
+                                    sx={{
+                                      '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.06)' },
+                                      cursor: 'pointer',
+                                    }}
+                                    onClick={() => {
+                                      setSelectedAnalyticsEvent(event);
+                                      setAnalyticsDetailOpen(true);
+                                    }}
+                                  >
+                                    <TableCell>
+                                      {event.createdAt ? new Date(event.createdAt).toLocaleString() : 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={event.eventType || 'VIEW'}
+                                        size="small"
+                                        sx={{
+                                          bgcolor:
+                                            event.eventType === 'CALL'
+                                              ? 'rgba(245, 158, 11, 0.2)'
+                                              : event.eventType === 'CLICK'
+                                                ? 'rgba(16, 185, 129, 0.2)'
+                                                : 'rgba(37, 99, 235, 0.2)',
+                                          color:
+                                            event.eventType === 'CALL'
+                                              ? '#B45309'
+                                              : event.eventType === 'CLICK'
+                                                ? '#047857'
+                                                : '#1D4ED8',
+                                          fontWeight: 700,
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell>{event.page || '-'}</TableCell>
+                                    <TableCell>{event.target || '-'}</TableCell>
+                                  <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{event.ipAddress || '-'}</TableCell>
+                                    <TableCell>
+                                      <Chip label={event.deviceType || '-'} size="small" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip label={event.browser || '-'} size="small" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip label={event.os || '-'} size="small" variant="outlined" />
+                                    </TableCell>
+                                    <TableCell>{event.userRole || event.userId || '-'}</TableCell>
+                                    <TableCell sx={{ textAlign: 'right', fontWeight: 600 }}>
+                                      {event.eventType === 'VIEW' ? '1 view' : event.eventType === 'CLICK' ? '1 click' : event.eventType === 'CALL' ? '1 call' : '-'}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </TabPanel>
 
@@ -1271,6 +1772,24 @@ const AdminDashboard: React.FC = () => {
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
                   Payment Transactions
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={fetchPayments}
+                  >
+                    Refresh Now
+                  </Button>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={autoRefreshPayments}
+                        onChange={(e) => setAutoRefreshPayments(e.target.checked)}
+                      />
+                    }
+                    label="Auto-refresh (5 min)"
+                  />
+                </Box>
                 {paymentsLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                     <CircularProgress />
@@ -1287,8 +1806,11 @@ const AdminDashboard: React.FC = () => {
                           <TableCell><strong>Provider</strong></TableCell>
                           <TableCell><strong>Amount</strong></TableCell>
                           <TableCell><strong>Commission</strong></TableCell>
+                          <TableCell><strong>Transaction ID</strong></TableCell>
+                          <TableCell><strong>Method</strong></TableCell>
                           <TableCell><strong>Status</strong></TableCell>
                           <TableCell><strong>Date</strong></TableCell>
+                          <TableCell><strong>Action</strong></TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -1300,14 +1822,51 @@ const AdminDashboard: React.FC = () => {
                             <TableCell>₹{payment.totalAmount?.toLocaleString() || '0'}</TableCell>
                             <TableCell>₹{payment.commissionDeducted?.toLocaleString() || '0'}</TableCell>
                             <TableCell>
+                              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                {payment.transactionId || 'N/A'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>{payment.paymentMethod || payment.paymentGateway || 'N/A'}</TableCell>
+                            <TableCell>
                               <Chip
                                 label={payment.paymentStatus || 'PENDING'}
                                 size="small"
-                                color={payment.paymentStatus === 'PAID' ? 'success' : 'warning'}
+                                color={
+                                  payment.paymentStatus === 'SUCCESS'
+                                    ? 'success'
+                                    : payment.paymentStatus === 'FAILED'
+                                      ? 'error'
+                                      : 'warning'
+                                }
                               />
                             </TableCell>
                             <TableCell>
                               {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              {payment.paymentStatus === 'PENDING_VERIFICATION' ? (
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    disabled={!payment.transactionId}
+                                    onClick={() => openPaymentVerifyDialog(payment, 'approve')}
+                                  >
+                                    Verify
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    disabled={!payment.transactionId}
+                                    onClick={() => openPaymentVerifyDialog(payment, 'reject')}
+                                  >
+                                    Reject
+                                  </Button>
+                                </Box>
+                              ) : (
+                                <Typography variant="caption" color="text.secondary">—</Typography>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1459,6 +2018,242 @@ const AdminDashboard: React.FC = () => {
                                   })}
                                 </Typography>
                               )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </Card>
+          </TabPanel>
+
+          <Dialog
+            open={paymentVerifyDialogOpen}
+            onClose={() => setPaymentVerifyDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>
+              {paymentVerifyDecision === 'approve' ? 'Verify Payment' : 'Reject Payment'}
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Booking ID: {selectedPayment?.bookingId || '-'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Transaction ID: {selectedPayment?.transactionId || '-'}
+                </Typography>
+              </Box>
+              <TextField
+                fullWidth
+                label="Confirm Transaction / Reference ID"
+                value={paymentVerifyTxnInput}
+                onChange={(e) => setPaymentVerifyTxnInput(e.target.value)}
+                helperText="Must match the recorded transaction ID"
+                sx={{ mt: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Remarks / Notes"
+                value={paymentVerifyNote}
+                onChange={(e) => setPaymentVerifyNote(e.target.value)}
+                multiline
+                minRows={3}
+                sx={{ mt: 2 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setPaymentVerifyDialogOpen(false)}>Cancel</Button>
+              <Button
+                variant="contained"
+                color={paymentVerifyDecision === 'approve' ? 'primary' : 'error'}
+                disabled={!paymentVerifyTxnInput}
+                onClick={() => {
+                  if (!selectedPayment?.id) return;
+                  handleVerifyPayment(
+                    selectedPayment.id,
+                    paymentVerifyTxnInput,
+                    paymentVerifyDecision === 'approve',
+                    paymentVerifyNote
+                  );
+                  setPaymentVerifyDialogOpen(false);
+                }}
+              >
+                {paymentVerifyDecision === 'approve' ? 'Verify' : 'Reject'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Support Tickets Tab */}
+          <TabPanel value={tabValue} index={8}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+                  Support Tickets
+                </Typography>
+                {supportTicketsLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : supportTickets.length === 0 ? (
+                  <Alert severity="info">No support tickets found</Alert>
+                ) : (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Ticket</strong></TableCell>
+                          <TableCell><strong>User</strong></TableCell>
+                          <TableCell><strong>Category</strong></TableCell>
+                          <TableCell><strong>Subject</strong></TableCell>
+                          <TableCell><strong>Status</strong></TableCell>
+                          <TableCell><strong>Priority</strong></TableCell>
+                          <TableCell><strong>Actions</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {supportTickets.map((ticket: any) => (
+                          <TableRow key={ticket.id}>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {ticket.id?.slice(-8)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : '—'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {ticket.userName || 'N/A'}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {ticket.userRole || 'USER'}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>{ticket.category}</TableCell>
+                            <TableCell>{ticket.subject}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={ticket.status}
+                                size="small"
+                                color={ticket.status === 'OPEN' ? 'warning' : ticket.status === 'IN_PROGRESS' ? 'info' : 'success'}
+                              />
+                            </TableCell>
+                            <TableCell>{ticket.priority}</TableCell>
+                            <TableCell>
+                              <Button size="small" variant="outlined" onClick={() => navigate('/support-dashboard')}>
+                                Open Support Dashboard
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </CardContent>
+            </Card>
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={9}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+                  Withdrawal Requests
+                </Typography>
+                {withdrawalsLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : withdrawals.length === 0 ? (
+                  <Alert severity="info">No withdrawal requests</Alert>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell><strong>Date</strong></TableCell>
+                          <TableCell><strong>Provider</strong></TableCell>
+                          <TableCell><strong>Amount</strong></TableCell>
+                          <TableCell><strong>Method</strong></TableCell>
+                          <TableCell><strong>Account</strong></TableCell>
+                          <TableCell><strong>Status</strong></TableCell>
+                          <TableCell><strong>Actions</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {withdrawals.map((req: any) => (
+                          <TableRow key={req.id}>
+                            <TableCell>
+                              {req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : 'N/A'}
+                            </TableCell>
+                            <TableCell>{req.providerId}</TableCell>
+                            <TableCell>₹{Number(req.amount || 0).toLocaleString()}</TableCell>
+                            <TableCell>{req.method}</TableCell>
+                            <TableCell>
+                              {req.method === 'UPI'
+                                ? req.upiId
+                                : `${req.accountHolderName || ''} • ${req.accountNumber || ''}`}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={req.status}
+                                size="small"
+                                color={req.status === 'PAID' ? 'success' : req.status === 'REJECTED' ? 'error' : req.status === 'APPROVED' ? 'info' : 'warning'}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={async () => {
+                                  await fetch(`http://localhost:8080/api/withdrawals/${req.id}/status`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'APPROVED' }),
+                                  });
+                                  fetchWithdrawals();
+                                }}
+                                sx={{ mr: 1 }}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                                onClick={async () => {
+                                  await fetch(`http://localhost:8080/api/withdrawals/${req.id}/status`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'PAID' }),
+                                  });
+                                  fetchWithdrawals();
+                                }}
+                                sx={{ mr: 1 }}
+                              >
+                                Mark Paid
+                              </Button>
+                              <Button
+                                size="small"
+                                color="error"
+                                variant="outlined"
+                                onClick={async () => {
+                                  const remarks = prompt('Rejection reason:');
+                                  if (!remarks) return;
+                                  await fetch(`http://localhost:8080/api/withdrawals/${req.id}/status`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'REJECTED', remarks }),
+                                  });
+                                  fetchWithdrawals();
+                                }}
+                              >
+                                Reject
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1743,6 +2538,146 @@ const AdminDashboard: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setReviewDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={analyticsDetailOpen}
+        onClose={() => setAnalyticsDetailOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Avatar sx={{ bgcolor: '#2563EB', width: 36, height: 36 }}>
+            <Assessment fontSize="small" />
+          </Avatar>
+          Traffic Event Details
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedAnalyticsEvent ? (
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={selectedAnalyticsEvent.eventType || 'VIEW'}
+                    color={selectedAnalyticsEvent.eventType === 'CALL' ? 'warning' : selectedAnalyticsEvent.eventType === 'CLICK' ? 'success' : 'primary'}
+                  />
+                  <Chip label={selectedAnalyticsEvent.deviceType || '-'} variant="outlined" />
+                  <Chip label={selectedAnalyticsEvent.browser || '-'} variant="outlined" />
+                  <Chip label={selectedAnalyticsEvent.os || '-'} variant="outlined" />
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AccessTime color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Time</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {selectedAnalyticsEvent.createdAt ? new Date(selectedAnalyticsEvent.createdAt).toLocaleString() : 'N/A'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Person color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">User</Typography>
+                    <Typography variant="body1">
+                      {selectedAnalyticsEvent.userRole || selectedAnalyticsEvent.userId || '-'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Link color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Page</Typography>
+                    <Typography variant="body1">{selectedAnalyticsEvent.page || '-'}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TouchApp color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Target</Typography>
+                    <Typography variant="body1">{selectedAnalyticsEvent.target || '-'}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Public color="primary" fontSize="small" />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="caption" color="text.secondary">IP Address</Typography>
+                    <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                      {selectedAnalyticsEvent.ipAddress || '-'}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => navigator.clipboard?.writeText(selectedAnalyticsEvent.ipAddress || '')}
+                  >
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Language color="primary" fontSize="small" />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="caption" color="text.secondary">User Agent</Typography>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      {selectedAnalyticsEvent.userAgent || '-'}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={() => navigator.clipboard?.writeText(selectedAnalyticsEvent.userAgent || '')}
+                  >
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Devices color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Device</Typography>
+                    <Typography variant="body1">{selectedAnalyticsEvent.deviceType || '-'}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <DesktopWindows color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Browser</Typography>
+                    <Typography variant="body1">{selectedAnalyticsEvent.browser || '-'}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Security color="primary" fontSize="small" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">OS</Typography>
+                    <Typography variant="body1">{selectedAnalyticsEvent.os || '-'}</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          ) : (
+            <Typography variant="body2" color="text.secondary">No details available.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAnalyticsDetailOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -46,7 +46,7 @@ public class Booking {
     private LocalDateTime scheduledDate;
     private LocalDateTime completedDate;
     
-    private String status = "PENDING"; // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+    private String status = "PENDING"; // PENDING, PAYMENT_PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
     
     @NotNull(message = "Price is required")
     private double price;
@@ -61,6 +61,12 @@ public class Booking {
     private String specialInstructions;
     private String customerNotes;
     private String providerNotes;
+    
+    // Live tracking (provider -> customer)
+    private Double providerLatitude;
+    private Double providerLongitude;
+    private LocalDateTime providerLocationUpdatedAt;
+    private LocalDateTime arrivedAt;
     
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime updatedAt = LocalDateTime.now();

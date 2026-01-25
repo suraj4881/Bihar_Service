@@ -4,6 +4,7 @@ import com.bihar.seva.dto.ApiResponse;
 import com.bihar.seva.model.*;
 import com.bihar.seva.service.AdminService;
 import com.bihar.seva.service.KYCService;
+import com.bihar.seva.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -21,6 +21,7 @@ import java.util.Optional;
 public class AdminController {
     
     private final AdminService adminService;
+    private final PaymentService paymentService;
     private final KYCService kycService;
     private final com.bihar.seva.repositories.AadhaarDocumentRepository aadhaarDocumentRepository;
     private final com.bihar.seva.repositories.PANDocumentRepository panDocumentRepository;
@@ -270,6 +271,23 @@ public class AdminController {
             log.error("Error fetching payments: ", e);
             return ResponseEntity.internalServerError()
                 .body(new ApiResponse<>(false, "Error fetching payments: " + e.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/transactions/payments/{paymentId}/verify")
+    public ResponseEntity<ApiResponse<Payment>> verifyPayment(
+            @PathVariable String paymentId,
+            @RequestBody Map<String, Object> request) {
+        try {
+            String transactionId = request.getOrDefault("transactionId", "").toString();
+            boolean approved = Boolean.parseBoolean(request.getOrDefault("approved", "true").toString());
+            String note = request.getOrDefault("note", "").toString();
+            Payment payment = paymentService.verifyPaymentByAdmin(paymentId, transactionId, approved, note);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Payment verification updated", payment));
+        } catch (Exception e) {
+            log.error("Error verifying payment: ", e);
+            return ResponseEntity.internalServerError()
+                .body(new ApiResponse<>(false, "Error verifying payment: " + e.getMessage(), null));
         }
     }
     

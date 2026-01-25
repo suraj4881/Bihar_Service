@@ -37,9 +37,13 @@ public class Payment {
     
     // Payment details
     private String paymentMethod; // ONLINE, WALLET, CASH, UPI, CARD
-    private String paymentStatus; // PENDING, PROCESSING, SUCCESS, FAILED, REFUNDED
+    private String paymentStatus; // PENDING, PROCESSING, PENDING_VERIFICATION, SUCCESS, FAILED, REFUNDED
     private String transactionId; // Payment gateway transaction ID
     private String paymentGateway; // RAZORPAY, PAYTM, STRIPE, etc.
+
+    // Admin verification
+    private String adminVerificationNote;
+    private LocalDateTime adminVerifiedAt;
     
     // Wallet transactions
     private String fromWalletId; // If paid from wallet

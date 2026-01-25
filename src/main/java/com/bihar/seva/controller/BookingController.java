@@ -2,6 +2,7 @@ package com.bihar.seva.controller;
 
 import com.bihar.seva.dto.ApiResponse;
 import com.bihar.seva.dto.BookingRequestDTO;
+import com.bihar.seva.dto.BookingTrackingUpdateRequest;
 import com.bihar.seva.model.Booking;
 import com.bihar.seva.service.BookingService;
 import com.bihar.seva.service.NotificationService;
@@ -30,14 +31,6 @@ public class BookingController {
     public ResponseEntity<ApiResponse> createBooking(@Valid @RequestBody BookingRequestDTO bookingRequest) {
         try {
             Booking booking = bookingService.createBooking(bookingRequest);
-            
-            // Send notification to provider
-            notificationService.createNotification(
-                booking.getProviderId(),
-                "New Booking Request",
-                "You have a new booking request for " + booking.getService(),
-                "BOOKING"
-            );
             
             return ResponseEntity.ok(new ApiResponse(true, "Booking created successfully", booking));
         } catch (Exception e) {
@@ -86,6 +79,10 @@ public class BookingController {
             map.put("specialInstructions", booking.getSpecialInstructions());
             map.put("emergencyContact", booking.getEmergencyContact());
             map.put("emergencyPhone", booking.getEmergencyPhone());
+            map.put("providerLatitude", booking.getProviderLatitude());
+            map.put("providerLongitude", booking.getProviderLongitude());
+            map.put("providerLocationUpdatedAt", booking.getProviderLocationUpdatedAt());
+            map.put("arrivedAt", booking.getArrivedAt());
             
             String customerName = booking.getEmergencyContact();
             if (customerName == null || customerName.isEmpty()) {
@@ -94,6 +91,10 @@ public class BookingController {
                 map.put("customerName", customerName);
             }
             map.put("customerPhone", booking.getEmergencyPhone());
+            userRepository.findById(booking.getProviderId()).ifPresent(user -> {
+                map.put("providerName", user.getName());
+                map.put("providerPhone", user.getPhone());
+            });
             return ResponseEntity.ok(new ApiResponse(true, "Booking retrieved", map));
         } catch (Exception e) {
             log.error("Error fetching booking: ", e);
@@ -114,7 +115,40 @@ public class BookingController {
             } else {
                 bookings = bookingService.getBookingsByUser(userId);
             }
-            return ResponseEntity.ok(new ApiResponse(true, "User bookings retrieved", bookings));
+            List<java.util.Map<String, Object>> enriched = new java.util.ArrayList<>();
+            for (Booking booking : bookings) {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", booking.getId());
+                map.put("userId", booking.getUserId());
+                map.put("providerId", booking.getProviderId());
+                map.put("serviceId", booking.getServiceId());
+                map.put("service", booking.getService());
+                map.put("serviceName", booking.getServiceName());
+                map.put("serviceCategory", booking.getServiceCategory());
+                map.put("address", booking.getAddress());
+                map.put("city", booking.getCity());
+                map.put("pincode", booking.getPincode());
+                map.put("scheduledDate", booking.getScheduledDate());
+                map.put("bookingDate", booking.getBookingDate());
+                map.put("status", booking.getStatus());
+                map.put("price", booking.getPrice());
+                map.put("totalAmount", booking.getTotalAmount());
+                map.put("paymentStatus", booking.getPaymentStatus());
+                map.put("specialInstructions", booking.getSpecialInstructions());
+                map.put("emergencyContact", booking.getEmergencyContact());
+                map.put("emergencyPhone", booking.getEmergencyPhone());
+                map.put("providerLatitude", booking.getProviderLatitude());
+                map.put("providerLongitude", booking.getProviderLongitude());
+                map.put("providerLocationUpdatedAt", booking.getProviderLocationUpdatedAt());
+                map.put("arrivedAt", booking.getArrivedAt());
+                
+                userRepository.findById(booking.getProviderId()).ifPresent(user -> {
+                    map.put("providerName", user.getName());
+                    map.put("providerPhone", user.getPhone());
+                });
+                enriched.add(map);
+            }
+            return ResponseEntity.ok(new ApiResponse(true, "User bookings retrieved", enriched));
         } catch (Exception e) {
             log.error("Error fetching user bookings: ", e);
             return ResponseEntity.badRequest()
@@ -181,7 +215,13 @@ public class BookingController {
     @PutMapping("/{id}/accept")
     public ResponseEntity<ApiResponse> acceptBooking(@PathVariable String id) {
         try {
-            Booking booking = bookingService.updateBookingStatus(id, "CONFIRMED");
+            Booking booking = bookingService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+            if (!"PAID".equals(booking.getPaymentStatus())) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, "Payment not verified yet", null));
+            }
+            booking = bookingService.updateBookingStatus(id, "CONFIRMED");
             
             // Notify customer
             notificationService.createNotification(
@@ -267,6 +307,67 @@ public class BookingController {
             return ResponseEntity.ok(new ApiResponse(true, "Booking cancelled", booking));
         } catch (Exception e) {
             log.error("Error cancelling booking: ", e);
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/{id}/tracking")
+    public ResponseEntity<ApiResponse> getTracking(@PathVariable String id) {
+        try {
+            Booking booking = bookingService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("providerLatitude", booking.getProviderLatitude());
+            map.put("providerLongitude", booking.getProviderLongitude());
+            map.put("providerLocationUpdatedAt", booking.getProviderLocationUpdatedAt());
+            map.put("arrivedAt", booking.getArrivedAt());
+            map.put("status", booking.getStatus());
+            return ResponseEntity.ok(new ApiResponse(true, "Tracking retrieved", map));
+        } catch (Exception e) {
+            log.error("Error fetching tracking: ", e);
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/{id}/tracking")
+    public ResponseEntity<ApiResponse> updateTracking(
+            @PathVariable String id,
+            @RequestBody BookingTrackingUpdateRequest request) {
+        try {
+            if (request.getLatitude() == null || request.getLongitude() == null) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, "Latitude and longitude are required", null));
+            }
+            Booking booking = bookingService.updateProviderLocation(id, request.getLatitude(), request.getLongitude());
+            notificationService.createNotification(
+                booking.getUserId(),
+                "Provider is on the way",
+                "Your provider shared live location",
+                "BOOKING"
+            );
+            return ResponseEntity.ok(new ApiResponse(true, "Tracking updated", booking));
+        } catch (Exception e) {
+            log.error("Error updating tracking: ", e);
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/{id}/arrive")
+    public ResponseEntity<ApiResponse> markArrived(@PathVariable String id) {
+        try {
+            Booking booking = bookingService.markArrived(id);
+            notificationService.createNotification(
+                booking.getUserId(),
+                "Provider Arrived",
+                "Your provider has arrived at the location",
+                "BOOKING"
+            );
+            return ResponseEntity.ok(new ApiResponse(true, "Provider marked arrived", booking));
+        } catch (Exception e) {
+            log.error("Error marking arrived: ", e);
             return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage(), null));
         }
