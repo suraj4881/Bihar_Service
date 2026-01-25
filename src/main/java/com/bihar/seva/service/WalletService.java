@@ -147,6 +147,86 @@ public class WalletService {
         log.info("Deducted {} from wallet for user: {}. New balance: {}", amount, userId, wallet.getBalance());
         return updatedWallet;
     }
+
+    /**
+     * Hold balance for withdrawal (creates PENDING transaction)
+     */
+    @Transactional
+    public Wallet holdForWithdrawal(String userId, Double amount, String description, String referenceId) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        Wallet wallet = getOrCreateWallet(userId);
+        if (wallet.getIsLocked()) {
+            throw new RuntimeException("Wallet is locked");
+        }
+        if (wallet.getBalance() < amount) {
+            throw new RuntimeException("Insufficient wallet balance");
+        }
+
+        boolean success = wallet.deductBalance(amount);
+        if (!success) {
+            throw new RuntimeException("Failed to hold balance");
+        }
+
+        wallet.setUpdatedAt(LocalDateTime.now());
+        Wallet updatedWallet = walletRepository.save(wallet);
+
+        WalletTransaction transaction = new WalletTransaction();
+        transaction.setWalletId(wallet.getId());
+        transaction.setUserId(userId);
+        transaction.setAmount(amount);
+        transaction.setTransactionType("WITHDRAWAL");
+        transaction.setTransactionCategory("WITHDRAWAL");
+        transaction.setDescription(description);
+        transaction.setBalanceBefore(wallet.getBalance() + amount);
+        transaction.setBalanceAfter(wallet.getBalance());
+        transaction.setStatus("PENDING");
+        transaction.setReferenceId(referenceId);
+        transaction.setReferenceType("WITHDRAWAL");
+        transaction.setCreatedAt(LocalDateTime.now());
+        transactionRepository.save(transaction);
+
+        return updatedWallet;
+    }
+
+    /**
+     * Release withdrawal hold on rejection
+     */
+    @Transactional
+    public Wallet releaseWithdrawalHold(String userId, Double amount, String referenceId, String reason) {
+        Wallet wallet = getOrCreateWallet(userId);
+        wallet.addBalance(amount);
+        wallet.setUpdatedAt(LocalDateTime.now());
+        Wallet updatedWallet = walletRepository.save(wallet);
+
+        WalletTransaction reversal = new WalletTransaction();
+        reversal.setWalletId(wallet.getId());
+        reversal.setUserId(userId);
+        reversal.setAmount(amount);
+        reversal.setTransactionType("WITHDRAWAL_REVERSAL");
+        reversal.setTransactionCategory("WITHDRAWAL");
+        reversal.setDescription(reason);
+        reversal.setBalanceBefore(wallet.getBalance() - amount);
+        reversal.setBalanceAfter(wallet.getBalance());
+        reversal.setStatus("SUCCESS");
+        reversal.setReferenceId(referenceId);
+        reversal.setReferenceType("WITHDRAWAL");
+        reversal.setCreatedAt(LocalDateTime.now());
+        transactionRepository.save(reversal);
+
+        return updatedWallet;
+    }
+
+    public void markWithdrawalTransaction(String referenceId, String status, String failureReason) {
+        List<WalletTransaction> transactions = transactionRepository.findByReferenceIdAndReferenceType(referenceId, "WITHDRAWAL");
+        for (WalletTransaction tx : transactions) {
+            tx.setStatus(status);
+            tx.setFailureReason(failureReason);
+            transactionRepository.save(tx);
+        }
+    }
     
     /**
      * Transfer amount between wallets

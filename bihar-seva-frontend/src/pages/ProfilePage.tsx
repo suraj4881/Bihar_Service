@@ -800,16 +800,27 @@ const ProfilePage: React.FC = () => {
     <Box sx={{ 
       flexGrow: 1, 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #FFF8E1 0%, #FFE082 30%, #FFF9C4 60%, #FFFFFF 100%)',
+      bgcolor: 'background.default',
     }}>
       {/* Modern Header */}
       <AppBar variant="simple" position="sticky" showBackButton />
 
       <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* Page Title */}
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-          My Profile
-        </Typography>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+            My Profile
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            Keep your personal details up to date for smoother bookings.
+          </Typography>
+        </Card>
 
         {/* Error/Success Messages */}
         {error && (

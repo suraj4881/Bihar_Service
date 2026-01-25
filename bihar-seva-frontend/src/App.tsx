@@ -26,6 +26,10 @@ import ProviderProfileSetup from './pages/ProviderProfileSetup';
 import CustomerProfileSetup from './pages/CustomerProfileSetup';
 import KYCVerificationPage from './pages/KYCVerificationPage';
 import ProviderServiceUpload from './pages/ProviderServiceUpload';
+import SupportRequestPage from './pages/SupportRequestPage';
+import SupportDashboard from './pages/SupportDashboard';
+import Footer from './components/Footer';
+import AnalyticsTracker from './components/AnalyticsTracker';
 
 function App() {
   return (
@@ -34,6 +38,7 @@ function App() {
         <AuthProvider>
           <LocationProvider>
             <Router>
+                <AnalyticsTracker />
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<HomePage />} />
@@ -115,6 +120,14 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route
+                    path="/support"
+                    element={
+                      <ProtectedRoute>
+                        <SupportRequestPage />
+                      </ProtectedRoute>
+                    } 
+                  />
                   
                   {/* Customer Dashboard */}
                   <Route 
@@ -145,7 +158,16 @@ function App() {
                       </ProtectedRoute>
                     } 
                   />
+                  <Route
+                    path="/support-dashboard"
+                    element={
+                      <ProtectedRoute requiredRole={['ADMIN', 'SUPPORT']}>
+                        <SupportDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
                 </Routes>
+                <Footer />
             </Router>
           </LocationProvider>
         </AuthProvider>

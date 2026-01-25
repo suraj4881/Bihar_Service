@@ -380,11 +380,27 @@ const ProviderProfileSetup: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+        bgcolor: 'background.default',
         py: 4,
       }}
     >
+      <AppBar variant="simple" position="sticky" showBackButton />
       <Container maxWidth="md">
+        <Card
+          sx={{
+            mb: 3,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+            Complete Provider Profile
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            Add service details and pricing to get verified faster.
+          </Typography>
+        </Card>
         <Card elevation={10} sx={{ borderRadius: 4 }}>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, textAlign: 'center', mb: 1 }}>

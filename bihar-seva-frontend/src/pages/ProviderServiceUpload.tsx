@@ -399,21 +399,27 @@ const ProviderServiceUpload: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+        bgcolor: 'background.default',
         py: 4,
       }}
     >
+      <AppBar variant="simple" position="sticky" showBackButton />
       <Container maxWidth="lg">
-        <IconButton
-          onClick={() => navigate('/provider-dashboard')}
+        <Card
           sx={{
-            mb: 2,
-            bgcolor: 'white',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
+            mb: 3,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
           }}
         >
-          <ArrowBack />
-        </IconButton>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+            Add New Service
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            Showcase your skills with clear details, pricing, and location.
+          </Typography>
+        </Card>
 
         <Card elevation={10} sx={{ borderRadius: 4 }}>
           <CardContent sx={{ p: 5 }}>
@@ -424,7 +430,7 @@ const ProviderServiceUpload: React.FC = () => {
                 fontWeight: 700,
                 textAlign: 'center',
                 mb: 1,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',

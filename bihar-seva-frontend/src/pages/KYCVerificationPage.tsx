@@ -2215,26 +2215,24 @@ const KYCVerificationPage: React.FC = () => {
   // Show status view if documents are submitted
   if (viewMode === 'status' && kycStatus) {
     return (
-      <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%)', py: 5 }}>
+      <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', py: 5 }}>
+        <AppBar variant="simple" position="sticky" showBackButton />
         <Container maxWidth="lg">
-          <IconButton
-            onClick={() => navigate(-1)}
+          <Card
             sx={{
               mb: 3,
-              bgcolor: 'white',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              border: '1px solid #e8e8e8',
-              '&:hover': { 
-                bgcolor: '#f8f9fa',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                transform: 'translateY(-2px)',
-              },
-              transition: 'all 0.3s ease',
+              p: { xs: 3, md: 4 },
+              color: '#fff',
+              background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
             }}
           >
-            <ArrowBack />
-          </IconButton>
-          
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+              KYC Verification Status
+            </Typography>
+            <Typography variant="body1" sx={{ opacity: 0.9 }}>
+              Track verification progress and document status updates.
+            </Typography>
+          </Card>
           <Card elevation={0} sx={{ borderRadius: 4, border: '1px solid #e8e8e8', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', background: 'white' }}>
             <CardContent sx={{ p: { xs: 3, md: 6 } }}>
               {renderStatusView()}
@@ -2249,30 +2247,28 @@ const KYCVerificationPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%)',
+        bgcolor: 'background.default',
         py: { xs: 3, md: 5 },
         position: 'relative',
       }}
     >
+      <AppBar variant="simple" position="sticky" showBackButton />
       <Container maxWidth="lg">
-        <IconButton
-          onClick={() => navigate(-1)}
+        <Card
           sx={{
             mb: 3,
-            bgcolor: 'white',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            border: '1px solid #e8e8e8',
-            '&:hover': { 
-              bgcolor: '#f8f9fa',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-              transform: 'translateY(-2px)',
-            },
-            transition: 'all 0.3s ease',
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
           }}
         >
-          <ArrowBack />
-        </IconButton>
-        
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+            Complete Your KYC
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            Submit Aadhaar, PAN, and Selfie to get verified faster.
+          </Typography>
+        </Card>
         <Card 
           elevation={0} 
           sx={{ 

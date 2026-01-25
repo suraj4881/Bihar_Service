@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (parsedUser) {
             // ✅ Ensure role is set from localStorage if missing
             if (!parsedUser.role && storedRole) {
-              parsedUser.role = storedRole as 'CUSTOMER' | 'PROVIDER' | 'ADMIN';
+              parsedUser.role = storedRole as 'CUSTOMER' | 'PROVIDER' | 'ADMIN' | 'SUPPORT';
             }
             
             // ✅ Sync language preference - Priority: localStorage (from HomePage) > User profile

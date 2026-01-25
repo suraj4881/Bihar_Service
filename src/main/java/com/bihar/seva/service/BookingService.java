@@ -59,6 +59,8 @@ public class BookingService {
         // Calculate commission (15% of price)
         booking.setCommission(bookingRequest.getPrice() * 0.15);
         booking.setTotalAmount(bookingRequest.getPrice());
+        booking.setStatus("PAYMENT_PENDING");
+        booking.setPaymentStatus("PENDING");
         
         Booking saved = bookingRepository.save(booking);
         log.info("Booking created: {} for user: {} with provider: {}", 
@@ -120,6 +122,33 @@ public class BookingService {
         }
         
         log.info("Booking {} status updated to: {}", id, status);
+        return bookingRepository.save(booking);
+    }
+
+    public Booking updateProviderLocation(String id, Double latitude, Double longitude) {
+        Booking booking = bookingRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setProviderLatitude(latitude);
+        booking.setProviderLongitude(longitude);
+        booking.setProviderLocationUpdatedAt(LocalDateTime.now());
+
+        if ("CONFIRMED".equals(booking.getStatus())) {
+            booking.setStatus("IN_PROGRESS");
+        }
+        booking.setUpdatedAt(LocalDateTime.now());
+        return bookingRepository.save(booking);
+    }
+
+    public Booking markArrived(String id) {
+        Booking booking = bookingRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setArrivedAt(LocalDateTime.now());
+        if ("CONFIRMED".equals(booking.getStatus())) {
+            booking.setStatus("IN_PROGRESS");
+        }
+        booking.setUpdatedAt(LocalDateTime.now());
         return bookingRepository.save(booking);
     }
     

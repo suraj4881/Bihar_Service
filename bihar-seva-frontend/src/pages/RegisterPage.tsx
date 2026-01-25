@@ -80,15 +80,15 @@ const RegisterPage: React.FC = () => {
       transition: 'all 0.3s',
       bgcolor: mode === 'dark' ? '#1E293B' : '#F8FAFC',
       '&:hover fieldset': {
-        borderColor: '#3B82F6',
+        borderColor: '#2563EB',
       },
       '&.Mui-focused fieldset': {
-        borderColor: '#3B82F6',
+        borderColor: '#2563EB',
         borderWidth: 2,
       },
     },
     '& .MuiInputLabel-root.Mui-focused': {
-      color: '#3B82F6',
+      color: '#2563EB',
     },
   };
 
@@ -172,8 +172,8 @@ const RegisterPage: React.FC = () => {
       sx={{
         minHeight: '100vh',
         background: mode === 'dark'
-          ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%)'
-          : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
+          ? 'linear-gradient(135deg, #0B1220 0%, #111827 50%, #1F2937 100%)'
+          : 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
         display: 'flex',
         alignItems: 'center',
         py: { xs: 2, md: 3 },

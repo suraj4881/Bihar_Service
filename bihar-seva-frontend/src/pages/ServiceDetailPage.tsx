@@ -26,6 +26,7 @@ import { Service } from '../types/service';
 import { serviceService } from '../services/serviceService';
 import { useLanguage } from '../contexts/LanguageContext';
 import AppBar from '../components/AppBar';
+import { logAnalyticsEvent } from '../services/analyticsService';
 
 const ServiceDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -70,6 +71,11 @@ const ServiceDetailPage: React.FC = () => {
 
   const handleBookService = () => {
     if (service) {
+      logAnalyticsEvent({
+        eventType: 'CLICK',
+        page: `/service/${service.id}`,
+        target: 'book_service',
+      });
       navigate(`/booking/${service.id}`);
     }
   };
@@ -96,16 +102,34 @@ const ServiceDetailPage: React.FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Button
-        startIcon={<ArrowBack />}
-        onClick={() => navigate('/services')}
-        sx={{ mb: 3 }}
-      >
-        Back to Services
-      </Button>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+            Service Overview
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            Review details, pricing, and availability before booking.
+          </Typography>
+        </Card>
 
-      <Grid container spacing={4}>
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => navigate('/services')}
+          sx={{ mb: 3 }}
+        >
+          Back to Services
+        </Button>
+
+        <Grid container spacing={4}>
         <Grid item xs={12} md={8}>
           <Card sx={{ mb: 3 }}>
             <CardContent>
@@ -115,7 +139,7 @@ const ServiceDetailPage: React.FC = () => {
                     width: 80,
                     height: 80,
                     borderRadius: '50%',
-                    backgroundColor: '#FF6B3520',
+                    backgroundColor: 'rgba(37, 99, 235, 0.12)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -201,8 +225,8 @@ const ServiceDetailPage: React.FC = () => {
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <AttachMoney sx={{ color: '#FF6B35', fontSize: 24 }} />
-                <Typography variant="h4" sx={{ color: '#FF6B35', fontWeight: 'bold' }}>
+                <AttachMoney sx={{ color: '#2563EB', fontSize: 24 }} />
+                <Typography variant="h4" sx={{ color: '#2563EB', fontWeight: 'bold' }}>
                   ₹{service.basePrice}
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
@@ -232,13 +256,9 @@ const ServiceDetailPage: React.FC = () => {
                 size="large"
                 onClick={handleBookService}
                 sx={{
-                  backgroundColor: '#FF6B35',
                   py: 1.5,
                   fontSize: '1.1rem',
                   fontWeight: 'bold',
-                  '&:hover': {
-                    backgroundColor: '#E64A19',
-                  },
                 }}
               >
                 Book Now
@@ -254,6 +274,7 @@ const ServiceDetailPage: React.FC = () => {
         </Grid>
       </Grid>
     </Container>
+    </Box>
   );
 };
 

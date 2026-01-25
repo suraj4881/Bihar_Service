@@ -75,14 +75,14 @@ const AboutPage: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#FAFAFA' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Navigation */}
       <AppBar variant="default" position="sticky" showNavLinks={true} showAuthButtons={true} />
 
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
           color: 'white',
           py: 8,
         }}
@@ -102,7 +102,7 @@ const AboutPage: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 8 }}>
         {/* Mission */}
         <Card sx={{ mb: 6, p: 4 }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#FF6B35' }}>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
             Our Mission
           </Typography>
           <Typography variant="body1" paragraph sx={{ fontSize: '1.1rem', lineHeight: 1.8 }}>
@@ -152,7 +152,7 @@ const AboutPage: React.FC = () => {
           sx={{
             p: 4,
             mb: 8,
-            background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)',
             color: 'white',
           }}
         >
@@ -196,7 +196,7 @@ const AboutPage: React.FC = () => {
                     mx: 'auto',
                     mb: 2,
                     fontSize: '4rem',
-                    bgcolor: '#FF6B35',
+                    bgcolor: '#2563EB',
                   }}
                 >
                   {member.avatar}
@@ -213,8 +213,8 @@ const AboutPage: React.FC = () => {
         </Grid>
 
         {/* Vision */}
-        <Card sx={{ mt: 8, p: 4, bgcolor: '#F5F5F5' }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: '#FF6B35' }}>
+        <Card sx={{ mt: 8, p: 4, bgcolor: 'background.paper' }}>
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: 'primary.main' }}>
             Our Vision
           </Typography>
           <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.8 }}>

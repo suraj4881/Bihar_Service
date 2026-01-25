@@ -154,14 +154,14 @@ const EmailVerificationPage: React.FC = () => {
       <Box
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         <Container maxWidth="sm">
-          <Paper elevation={10} sx={{ p: 4, borderRadius: 3, textAlign: 'center' }}>
+          <Paper elevation={10} sx={{ p: 4, borderRadius: 3, textAlign: 'center', border: '1px solid rgba(15, 23, 42, 0.08)' }}>
             <Typography variant="h5" sx={{ mb: 2 }}>
               ❌ No Email Provided
             </Typography>
@@ -171,10 +171,6 @@ const EmailVerificationPage: React.FC = () => {
             <Button
               variant="contained"
               onClick={() => navigate('/register')}
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-              }}
             >
               Go to Register
             </Button>
@@ -188,14 +184,14 @@ const EmailVerificationPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
         display: 'flex',
         alignItems: 'center',
         py: 4,
       }}
     >
       <Container maxWidth="sm">
-        <Paper elevation={10} sx={{ p: 4, borderRadius: 3, position: 'relative' }}>
+        <Paper elevation={10} sx={{ p: 4, borderRadius: 3, position: 'relative', border: '1px solid rgba(15, 23, 42, 0.08)' }}>
           {/* Logo */}
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Logo size="medium" onClick={() => navigate('/')} />
@@ -210,7 +206,7 @@ const EmailVerificationPage: React.FC = () => {
               position: 'absolute',
               top: 16,
               left: 16,
-              color: '#667eea',
+              color: 'primary.main',
             }}
           >
             Back

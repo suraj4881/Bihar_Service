@@ -335,7 +335,7 @@ const EmailOTPPage: React.FC = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
         display: 'flex',
         alignItems: 'center',
         py: 4,
@@ -348,6 +348,7 @@ const EmailOTPPage: React.FC = () => {
             p: 4,
             borderRadius: 3,
             position: 'relative',
+            border: '1px solid rgba(15, 23, 42, 0.08)',
           }}
         >
           {/* Logo */}
@@ -364,7 +365,7 @@ const EmailOTPPage: React.FC = () => {
               position: 'absolute',
               top: 16,
               left: 16,
-              color: '#667eea',
+              color: 'primary.main',
             }}
           >
             Back

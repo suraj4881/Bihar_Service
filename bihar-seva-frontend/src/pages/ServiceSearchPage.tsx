@@ -239,11 +239,38 @@ const ServiceSearchPage: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Navigation Bar */}
       <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 40%, #2563EB 100%)',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                Find trusted services near you
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Search by service name or use live GPS to discover providers in your area.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}>
+              <Button variant="contained" color="secondary" onClick={() => { setLocationType('gps'); getCurrentLocation(); }} sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}>
+                Use GPS
+              </Button>
+              <Button variant="outlined" onClick={() => navigate('/support')} sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff' } }}>
+                Need Help?
+              </Button>
+            </Grid>
+          </Grid>
+        </Card>
         {/* Search Bar */}
         <Card sx={{ mb: 4, p: 2.5, borderRadius: 3, boxShadow: '0 6px 24px rgba(0,0,0,0.08)' }}>
           <Grid container spacing={2} alignItems="center">

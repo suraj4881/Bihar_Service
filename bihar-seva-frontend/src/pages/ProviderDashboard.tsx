@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -32,6 +32,7 @@ import {
   Popover,
   Divider,
   Tooltip,
+  TextField,
   AppBar as MuiAppBar,
   Toolbar,
 } from '@mui/material';
@@ -56,13 +57,16 @@ import {
   BusinessCenter,
   Schedule,
   Info,
+  MyLocation,
+  SupportAgent,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { formatPrice } from '../utils/helpers';
+import { formatPrice, getCurrentLocation } from '../utils/helpers';
 import { Notification } from '../types';
 import Logo from '../components/Logo';
+import SupportChatFloatingWidget from '../components/SupportChatFloatingWidget';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -109,6 +113,21 @@ const ProviderDashboard: React.FC = () => {
     averageRating: 0,
     totalReviews: 0,
   });
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [withdrawRequests, setWithdrawRequests] = useState<any[]>([]);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [withdrawSubmitting, setWithdrawSubmitting] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
+  const [withdrawSuccess, setWithdrawSuccess] = useState('');
+  const [withdrawForm, setWithdrawForm] = useState({
+    amount: '',
+    method: 'UPI',
+    upiId: '',
+    accountHolderName: '',
+    accountNumber: '',
+    ifsc: '',
+    bankName: '',
+  });
   const [services, setServices] = useState<any[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -119,6 +138,11 @@ const ProviderDashboard: React.FC = () => {
     return `${digits.slice(0, 2)}XXXX${digits.slice(-2)}`;
   };
   const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [locationUpdatingId, setLocationUpdatingId] = useState<string | null>(null);
+  const [arriveUpdatingId, setArriveUpdatingId] = useState<string | null>(null);
+  const [liveTrackingBookingId, setLiveTrackingBookingId] = useState<string | null>(null);
+  const liveTrackingWatchId = useRef<number | null>(null);
+  const lastTrackingSentAt = useRef<number>(0);
 
   const providerId = user?.id || provider?.id;
 
@@ -128,12 +152,17 @@ const ProviderDashboard: React.FC = () => {
     fetchNotifications();
     fetchServices();
     fetchBookings();
+    fetchWalletBalance();
+    fetchWithdrawRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerId]);
 
   useEffect(() => {
     if (tabValue === 1) {
       fetchBookings();
+    } else if (tabValue === 2) {
+      fetchWalletBalance();
+      fetchWithdrawRequests();
     }
   }, [tabValue]);
 
@@ -271,6 +300,100 @@ const ProviderDashboard: React.FC = () => {
     }
   };
 
+  const fetchWalletBalance = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8080/api/wallet/balance', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data?.balance !== undefined) {
+        setWalletBalance(data.data.balance);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
+  const fetchWithdrawRequests = async () => {
+    if (!providerId) return;
+    setWithdrawLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/withdrawals/provider/${providerId}`);
+      const data = await response.json();
+      if (data.success && data.data) {
+        setWithdrawRequests(data.data);
+      } else {
+        setWithdrawRequests([]);
+      }
+    } catch (error) {
+      setWithdrawRequests([]);
+    } finally {
+      setWithdrawLoading(false);
+    }
+  };
+
+  const handleWithdrawSubmit = async () => {
+    if (!providerId) {
+      setWithdrawError('Provider not found');
+      return;
+    }
+    if (!withdrawForm.amount) {
+      setWithdrawError('Please enter withdrawal amount');
+      return;
+    }
+    if (withdrawForm.method === 'UPI' && !withdrawForm.upiId) {
+      setWithdrawError('Please enter UPI ID');
+      return;
+    }
+    if (withdrawForm.method === 'BANK' && (!withdrawForm.accountNumber || !withdrawForm.ifsc || !withdrawForm.accountHolderName)) {
+      setWithdrawError('Please fill bank account details');
+      return;
+    }
+    setWithdrawSubmitting(true);
+    setWithdrawError('');
+    setWithdrawSuccess('');
+    try {
+      const response = await fetch('http://localhost:8080/api/withdrawals/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          providerId,
+          amount: Number(withdrawForm.amount),
+          method: withdrawForm.method,
+          upiId: withdrawForm.upiId,
+          accountHolderName: withdrawForm.accountHolderName,
+          accountNumber: withdrawForm.accountNumber,
+          ifsc: withdrawForm.ifsc,
+          bankName: withdrawForm.bankName,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setWithdrawSuccess('Withdrawal request submitted');
+        setWithdrawForm({
+          amount: '',
+          method: 'UPI',
+          upiId: '',
+          accountHolderName: '',
+          accountNumber: '',
+          ifsc: '',
+          bankName: '',
+        });
+        fetchWalletBalance();
+        fetchWithdrawRequests();
+      } else {
+        setWithdrawError(data.message || 'Withdrawal failed');
+      }
+    } catch (error: any) {
+      setWithdrawError(error?.message || 'Withdrawal failed');
+    } finally {
+      setWithdrawSubmitting(false);
+    }
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -329,6 +452,15 @@ const ProviderDashboard: React.FC = () => {
       
       if (data.success && data.data) {
         setBookings(data.data);
+        const totalBookings = data.data.length;
+        const pendingBookings = data.data.filter((b: any) => b.status === 'PENDING').length;
+        const completedBookings = data.data.filter((b: any) => b.status === 'COMPLETED').length;
+        setStats(prev => ({
+          ...prev,
+          totalBookings,
+          pendingBookings,
+          completedBookings,
+        }));
       } else {
         setBookings([]);
       }
@@ -355,6 +487,103 @@ const ProviderDashboard: React.FC = () => {
       // ignore
     }
   };
+
+  const handleShareLiveLocation = async (bookingId: string) => {
+    setLocationUpdatingId(bookingId);
+    try {
+      const token = localStorage.getItem('token');
+      const location = await getCurrentLocation();
+      const response = await fetch(`http://localhost:8080/api/bookings/${bookingId}/tracking`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ latitude: location.lat, longitude: location.lng }),
+      });
+      if (response.ok) {
+        fetchBookings();
+      }
+    } catch (error) {
+      // ignore
+    } finally {
+      setLocationUpdatingId(null);
+    }
+  };
+
+  const handleMarkArrived = async (bookingId: string) => {
+    setArriveUpdatingId(bookingId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/bookings/${bookingId}/arrive`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        fetchBookings();
+      }
+    } catch (error) {
+      // ignore
+    } finally {
+      setArriveUpdatingId(null);
+    }
+  };
+
+  const stopLiveTracking = () => {
+    if (liveTrackingWatchId.current !== null) {
+      navigator.geolocation.clearWatch(liveTrackingWatchId.current);
+      liveTrackingWatchId.current = null;
+    }
+    setLiveTrackingBookingId(null);
+  };
+
+  const startLiveTracking = async (bookingId: string) => {
+    stopLiveTracking();
+    setLiveTrackingBookingId(bookingId);
+    const token = localStorage.getItem('token');
+
+    if (!navigator.geolocation) {
+      setLiveTrackingBookingId(null);
+      return;
+    }
+
+    liveTrackingWatchId.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        const now = Date.now();
+        if (now - lastTrackingSentAt.current < 10000) return;
+        lastTrackingSentAt.current = now;
+        try {
+          await fetch(`http://localhost:8080/api/bookings/${bookingId}/tracking`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }),
+          });
+        } catch (error) {
+          // ignore
+        }
+      },
+      () => {
+        stopLiveTracking();
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      }
+    );
+  };
+
+  useEffect(() => {
+    return () => stopLiveTracking();
+  }, []);
 
   const fetchNotifications = async () => {
     if (!providerId) return;
@@ -503,9 +732,9 @@ const ProviderDashboard: React.FC = () => {
   const kycStatusInfo = getKYCStatusColor();
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* App Bar */}
-      <MuiAppBar position="static" elevation={0} sx={{ bgcolor: '#3B82F6', borderBottom: '3px solid #2563EB' }}>
+      <MuiAppBar position="static" elevation={0} sx={{ bgcolor: '#2563EB', borderBottom: '3px solid #1E40AF' }}>
         <Toolbar sx={{ py: 1 }}>
           <Logo size="medium" onClick={() => navigate('/')} />
           <Typography variant="h6" sx={{ flexGrow: 1, ml: 2, fontWeight: 700, color: 'white' }}>
@@ -533,6 +762,10 @@ const ProviderDashboard: React.FC = () => {
                 width: 400,
                 maxHeight: 500,
                 mt: 1,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: 'divider',
+                boxShadow: '0 18px 45px rgba(15, 23, 42, 0.16)',
               },
             }}
           >
@@ -649,6 +882,33 @@ const ProviderDashboard: React.FC = () => {
       </MuiAppBar>
 
       <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Card
+          sx={{
+            mb: 3,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 40%, #2563EB 100%)',
+          }}
+        >
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={7}>
+              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                Hi{user?.name ? `, ${user.name}` : ''}! Ready to accept bookings?
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Manage services, track bookings, and keep your availability updated.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={5} sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}>
+              <Button variant="contained" color="secondary" onClick={() => navigate('/provider/upload-service')} sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}>
+                Add Service
+              </Button>
+              <Button variant="outlined" onClick={() => navigate('/support')} sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff' } }}>
+                Get Help
+              </Button>
+            </Grid>
+          </Grid>
+        </Card>
         {/* KYC Status Banner - Prominent Display */}
         {!kycLoading && (
           <Alert
@@ -1094,9 +1354,17 @@ const ProviderDashboard: React.FC = () => {
                     >
                       {kycStatus.status === 'VERIFIED' ? t('dashboard.kycVerified') + ' ✅' : t('dashboard.kycStatus')}
                     </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<SupportAgent />}
+                      onClick={() => navigate('/support')}
+                      sx={{ mt: 1.5, fontWeight: 600, py: 1.2, borderRadius: 2 }}
+                    >
+                      Help & Support
+                    </Button>
                   </CardContent>
                 </Card>
-
                 <Card elevation={2} sx={{ borderRadius: 2, bgcolor: '#f8f9fa' }}>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 2 }}>
@@ -1214,6 +1482,46 @@ const ProviderDashboard: React.FC = () => {
                                   Confirm
                                 </Button>
                               )}
+                              {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<MyLocation />}
+                                  onClick={() => handleShareLiveLocation(booking.id)}
+                                  disabled={locationUpdatingId === booking.id || liveTrackingBookingId === booking.id}
+                                  sx={{ fontWeight: 600, mr: 1 }}
+                                >
+                                  {locationUpdatingId === booking.id ? 'Sharing...' : 'Share Live'}
+                                </Button>
+                              )}
+                              {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && (
+                                <Button
+                                  size="small"
+                                  variant={liveTrackingBookingId === booking.id ? 'contained' : 'outlined'}
+                                  color={liveTrackingBookingId === booking.id ? 'success' : 'primary'}
+                                  startIcon={<MyLocation />}
+                                  onClick={() =>
+                                    liveTrackingBookingId === booking.id
+                                      ? stopLiveTracking()
+                                      : startLiveTracking(booking.id)
+                                  }
+                                  sx={{ fontWeight: 600, mr: 1 }}
+                                >
+                                  {liveTrackingBookingId === booking.id ? 'Stop Live' : 'Auto Live'}
+                                </Button>
+                              )}
+                              {booking.status === 'IN_PROGRESS' && (
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="success"
+                                  onClick={() => handleMarkArrived(booking.id)}
+                                  disabled={arriveUpdatingId === booking.id}
+                                  sx={{ fontWeight: 600, mr: 1 }}
+                                >
+                                  {arriveUpdatingId === booking.id ? 'Arriving...' : 'Arrived'}
+                                </Button>
+                              )}
                               {booking.address && (
                                 <Button
                                   size="small"
@@ -1267,6 +1575,155 @@ const ProviderDashboard: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">
                       {t('dashboard.monthlyEarnings')}
                     </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card elevation={2} sx={{ borderRadius: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333' }}>
+                      Wallet Balance
+                    </Typography>
+                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#2563EB', mb: 1 }}>
+                      ₹{walletBalance.toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Available for withdrawal
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Card elevation={2} sx={{ borderRadius: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 2 }}>
+                      Withdraw Earnings
+                    </Typography>
+                    {withdrawError && <Alert severity="error" sx={{ mb: 2 }}>{withdrawError}</Alert>}
+                    {withdrawSuccess && <Alert severity="success" sx={{ mb: 2 }}>{withdrawSuccess}</Alert>}
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          label="Amount"
+                          value={withdrawForm.amount}
+                          onChange={(e) => setWithdrawForm({ ...withdrawForm, amount: e.target.value })}
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <TextField
+                          fullWidth
+                          select
+                          label="Withdrawal Method"
+                          value={withdrawForm.method}
+                          onChange={(e) => setWithdrawForm({ ...withdrawForm, method: e.target.value })}
+                        >
+                          <MenuItem value="UPI">UPI</MenuItem>
+                          <MenuItem value="BANK">Bank Transfer</MenuItem>
+                        </TextField>
+                      </Grid>
+                      {withdrawForm.method === 'UPI' && (
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="UPI ID"
+                            value={withdrawForm.upiId}
+                            onChange={(e) => setWithdrawForm({ ...withdrawForm, upiId: e.target.value })}
+                          />
+                        </Grid>
+                      )}
+                      {withdrawForm.method === 'BANK' && (
+                        <>
+                          <Grid item xs={12}>
+                            <TextField
+                              fullWidth
+                              label="Account Holder Name"
+                              value={withdrawForm.accountHolderName}
+                              onChange={(e) => setWithdrawForm({ ...withdrawForm, accountHolderName: e.target.value })}
+                            />
+                          </Grid>
+                          <Grid item xs={12}>
+                            <TextField
+                              fullWidth
+                              label="Account Number"
+                              value={withdrawForm.accountNumber}
+                              onChange={(e) => setWithdrawForm({ ...withdrawForm, accountNumber: e.target.value })}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField
+                              fullWidth
+                              label="IFSC"
+                              value={withdrawForm.ifsc}
+                              onChange={(e) => setWithdrawForm({ ...withdrawForm, ifsc: e.target.value })}
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField
+                              fullWidth
+                              label="Bank Name"
+                              value={withdrawForm.bankName}
+                              onChange={(e) => setWithdrawForm({ ...withdrawForm, bankName: e.target.value })}
+                            />
+                          </Grid>
+                        </>
+                      )}
+                      <Grid item xs={12}>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          onClick={handleWithdrawSubmit}
+                          disabled={withdrawSubmitting}
+                        >
+                          {withdrawSubmitting ? 'Submitting...' : 'Request Withdrawal'}
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12}>
+                <Card elevation={2} sx={{ borderRadius: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 2 }}>
+                      Withdrawal Requests
+                    </Typography>
+                    {withdrawLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                        <CircularProgress />
+                      </Box>
+                    ) : withdrawRequests.length === 0 ? (
+                      <Alert severity="info">No withdrawal requests yet</Alert>
+                    ) : (
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                              <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                              <TableCell sx={{ fontWeight: 700 }}>Amount</TableCell>
+                              <TableCell sx={{ fontWeight: 700 }}>Method</TableCell>
+                              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {withdrawRequests.map((req: any) => (
+                              <TableRow key={req.id}>
+                                <TableCell>{req.requestedAt ? new Date(req.requestedAt).toLocaleDateString() : 'N/A'}</TableCell>
+                                <TableCell>₹{Number(req.amount || 0).toLocaleString()}</TableCell>
+                                <TableCell>{req.method}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={req.status}
+                                    size="small"
+                                    color={req.status === 'PAID' ? 'success' : req.status === 'REJECTED' ? 'error' : req.status === 'APPROVED' ? 'info' : 'warning'}
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>
@@ -1423,6 +1880,7 @@ const ProviderDashboard: React.FC = () => {
           </TabPanel>
         </Paper>
       </Container>
+      <SupportChatFloatingWidget userId={providerId || ''} userRole="PROVIDER" userName={user?.name || provider?.name || 'Provider'} />
     </Box>
   );
 };

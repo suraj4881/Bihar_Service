@@ -159,16 +159,32 @@ const ServiceListPage: React.FC = () => {
 
   const getCategoryColor = (categoryName: string) => {
     const category = categories.find(cat => cat.name === categoryName);
-    return category?.color || '#FF6B35';
+    return category?.color || '#2563EB';
   };
 
   const filteredCategories = categories.filter(cat => cat.isActive);
 
   return (
-    <Box sx={{ flexGrow: 1, backgroundColor: '#FAFAFA', minHeight: '100vh' }}>
+    <Box sx={{ flexGrow: 1, bgcolor: 'background.default', minHeight: '100vh' }}>
+      <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+            Services Marketplace
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            Discover verified services and compare pricing instantly.
+          </Typography>
+        </Card>
         {/* Header */}
-        <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
             Services
           </Typography>
@@ -211,7 +227,8 @@ const ServiceListPage: React.FC = () => {
               variant="contained"
               startIcon={<Add />}
               onClick={handleAddService}
-              sx={{ backgroundColor: '#2E7D32' }}
+              color="secondary"
+              sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}
             >
               Add Service
             </Button>

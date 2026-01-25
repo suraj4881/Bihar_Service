@@ -37,6 +37,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import AppBar from '../components/AppBar';
 import StatusBadge from '../components/StatusBadge';
+import { logAnalyticsEvent } from '../services/analyticsService';
 
 interface Provider {
   id: string;
@@ -197,6 +198,11 @@ const ProviderDetailPage: React.FC = () => {
     setCallLoading(true);
     setCallError('');
     try {
+      logAnalyticsEvent({
+        eventType: 'CALL',
+        page: `/provider/${id}`,
+        target: 'masked_call',
+      });
       const response = await fetch('http://localhost:8080/api/calls/masked', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,19 +223,43 @@ const ProviderDetailPage: React.FC = () => {
 
 
   if (loading) {
-    return <Typography>Loading...</Typography>;
+    return (
+      <Container maxWidth="md" sx={{ py: 6 }}>
+        <Typography variant="h6">Loading provider details...</Typography>
+      </Container>
+    );
   }
 
   if (!provider) {
-    return <Typography>Provider not found</Typography>;
+    return (
+      <Container maxWidth="md" sx={{ py: 6 }}>
+        <Typography variant="h6">Provider not found.</Typography>
+      </Container>
+    );
   }
 
   return (
-    <Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Navigation Bar */}
       <AppBar variant="simple" position="sticky" showBackButton showNavLinks={false} showAuthButtons={false} />
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Card
+          sx={{
+            mb: 4,
+            p: { xs: 3, md: 4 },
+            color: '#fff',
+            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+            Provider Profile
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>
+            View experience, availability, and verified service details.
+          </Typography>
+        </Card>
+
         <Grid container spacing={4}>
           {/* Provider Info Card */}
           <Grid item xs={12} md={4}>
@@ -243,7 +273,7 @@ const ProviderDetailPage: React.FC = () => {
                       height: 150,
                       mx: 'auto',
                       mb: 2,
-                      bgcolor: '#FF6B35',
+                      bgcolor: '#2563EB',
                       fontSize: '3rem',
                     }}
                   >
@@ -344,11 +374,7 @@ const ProviderDetailPage: React.FC = () => {
                   variant="contained"
                   size="large"
                   onClick={() => navigate(`/booking/${provider.id}`)}
-                  sx={{
-                    mb: 1,
-                    bgcolor: '#FF6B35',
-                    '&:hover': { bgcolor: '#E64A19' },
-                  }}
+                  sx={{ mb: 1 }}
                 >
                   Book Service
                 </Button>

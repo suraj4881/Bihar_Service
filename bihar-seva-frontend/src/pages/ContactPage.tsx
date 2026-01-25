@@ -73,25 +73,25 @@ const ContactPage: React.FC = () => {
 
   const contactInfo = [
     {
-      icon: <Phone sx={{ fontSize: 40, color: '#FF6B35' }} />,
+      icon: <Phone sx={{ fontSize: 40, color: '#2563EB' }} />,
       title: 'Phone',
       details: ['+91 98765 43210', '+91 98765 43211'],
       action: 'Call Us',
     },
     {
-      icon: <Email sx={{ fontSize: 40, color: '#2196F3' }} />,
+      icon: <Email sx={{ fontSize: 40, color: '#3B82F6' }} />,
       title: 'Email',
       details: ['support@quicksevabihar.com', 'info@quicksevabihar.com'],
       action: 'Email Us',
     },
     {
-      icon: <LocationOn sx={{ fontSize: 40, color: '#4CAF50' }} />,
+      icon: <LocationOn sx={{ fontSize: 40, color: '#16A34A' }} />,
       title: 'Office',
       details: ['123, Fraser Road', 'Patna, Bihar - 800001'],
       action: 'Get Directions',
     },
     {
-      icon: <AccessTime sx={{ fontSize: 40, color: '#9C27B0' }} />,
+      icon: <AccessTime sx={{ fontSize: 40, color: '#F59E0B' }} />,
       title: 'Working Hours',
       details: ['Monday - Saturday: 9 AM - 6 PM', 'Sunday: Closed'],
       action: null,
@@ -99,14 +99,14 @@ const ContactPage: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#FAFAFA' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Navigation */}
       <AppBar variant="default" position="sticky" showNavLinks={true} showAuthButtons={true} />
 
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
           color: 'white',
           py: 8,
         }}
@@ -222,8 +222,6 @@ const ContactPage: React.FC = () => {
                       startIcon={<Send />}
                       sx={{
                         py: 1.5,
-                        bgcolor: '#FF6B35',
-                        '&:hover': { bgcolor: '#E64A19' },
                         fontWeight: 600,
                       }}
                     >
@@ -272,7 +270,7 @@ const ContactPage: React.FC = () => {
                             size="small"
                             sx={{
                               mt: 1,
-                              color: '#FF6B35',
+                              color: 'primary.main',
                               textTransform: 'none',
                               fontWeight: 600,
                             }}
@@ -288,14 +286,14 @@ const ContactPage: React.FC = () => {
             </Grid>
 
             {/* Map Placeholder */}
-            <Paper elevation={2} sx={{ mt: 3, p: 3, textAlign: 'center', bgcolor: '#F5F5F5' }}>
+            <Paper elevation={2} sx={{ mt: 3, p: 3, textAlign: 'center', bgcolor: 'background.paper' }}>
               <Box
                 sx={{
                   height: 200,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  bgcolor: '#E0E0E0',
+                  bgcolor: 'rgba(15, 23, 42, 0.06)',
                   borderRadius: 2,
                   mb: 2,
                 }}

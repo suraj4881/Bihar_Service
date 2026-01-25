@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'CUSTOMER' | 'PROVIDER' | 'ADMIN'; // Added role field
+  role: 'CUSTOMER' | 'PROVIDER' | 'ADMIN' | 'SUPPORT'; // Added role field
   language?: string; // English, Hindi
   address: string;
   city: string;

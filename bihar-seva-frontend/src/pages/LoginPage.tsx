@@ -77,17 +77,25 @@ const LoginPage: React.FC = () => {
     if (e) e.preventDefault();
 
     // Validation
-    if (!email.trim()) {
-      setError('Please enter your email');
+    const identifier = email.trim();
+    if (!identifier) {
+      setError('Please enter your email or mobile number');
       return;
     }
     if (!password) {
       setError('Please enter your password');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
-      return;
+    if (identifier.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+    } else {
+      if (!/^[6-9]\d{9}$/.test(identifier)) {
+        setError('Please enter a valid mobile number');
+        return;
+      }
     }
 
     setLoading(true);
@@ -97,15 +105,22 @@ const LoginPage: React.FC = () => {
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: identifier, password }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await response.json() : null;
+
+      if (!response.ok || !data?.success) {
+        const message = data?.message || `Login failed (status ${response.status})`;
+        if (message.toLowerCase().includes('invalid email or password')) {
+          setError('Invalid credentials');
+        } else {
+          setError(message);
+        }
+        return;
       }
 
-      const data = await response.json();
-      
       if (data.success) {
         // ✅ Get role from response
         const userRole = data.data.role || data.data.user?.role || 'CUSTOMER';
@@ -179,6 +194,8 @@ const LoginPage: React.FC = () => {
         let redirectPath = '/';
         if (userRole === 'ADMIN') {
           redirectPath = '/admin-dashboard';
+        } else if (userRole === 'SUPPORT') {
+          redirectPath = '/support-dashboard';
         } else if (userRole === 'PROVIDER') {
           redirectPath = '/provider-dashboard';
         } else if (userRole === 'CUSTOMER') {
@@ -188,15 +205,10 @@ const LoginPage: React.FC = () => {
         // ✅ Force full page reload to update AuthContext
         // Language is already saved in localStorage, so it will persist across reload
         window.location.href = redirectPath;
-      } else {
-        setError(data.message || t('login.error'));
       }
     } catch (err: any) {
-      // Error handled by setError
       if (err.message.includes('Failed to fetch')) {
         setError('Cannot connect to server. Please check if backend is running.');
-      } else if (err.message.includes('Server error')) {
-        setError('Server error. Please try again later.');
       } else {
         setError(err.message || 'Login failed. Please try again.');
       }
@@ -243,8 +255,8 @@ const LoginPage: React.FC = () => {
       sx={{
         minHeight: '100vh',
         background: mode === 'dark'
-          ? 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%)'
-          : 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
+          ? 'linear-gradient(135deg, #0B1220 0%, #111827 50%, #1F2937 100%)'
+          : 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
         display: 'flex',
         alignItems: 'center',
         py: 4,
@@ -435,7 +447,7 @@ const LoginPage: React.FC = () => {
                 <Box component="form" onSubmit={handleSubmit} onKeyPress={handleKeyPress}>
                   <TextField
                     fullWidth
-                    label={t('login.email')}
+                    label="Email or Mobile"
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
@@ -443,7 +455,7 @@ const LoginPage: React.FC = () => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: '#3B82F6' }} />
+                          <Email sx={{ color: '#2563EB' }} />
                         </InputAdornment>
                       ),
                     }}
@@ -460,7 +472,7 @@ const LoginPage: React.FC = () => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: '#3B82F6' }} />
+                          <Lock sx={{ color: '#2563EB' }} />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -481,7 +493,7 @@ const LoginPage: React.FC = () => {
                           checked={rememberMe}
                           onChange={handleRememberMeChange}
                           disabled={loading}
-                          sx={{ color: '#3B82F6', '&.Mui-checked': { color: '#3B82F6' } }}
+                          sx={{ color: 'primary.main', '&.Mui-checked': { color: 'primary.main' } }}
                         />
                       }
                       label={<Typography variant="body2">{t('login.remember')}</Typography>}
@@ -508,8 +520,8 @@ const LoginPage: React.FC = () => {
                     size="large"
                     onClick={handleSubmit}
                     disabled={loading}
-                    sx={{
-                      background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+                      sx={{
+                        background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
                       color: 'white',
                       py: 1.75,
                       borderRadius: 2,
@@ -517,12 +529,12 @@ const LoginPage: React.FC = () => {
                       fontSize: '1.05rem',
                       fontWeight: 700,
                       mb: 3,
-                      boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+                        boxShadow: '0 8px 24px rgba(37, 99, 235, 0.35)',
                       transition: 'all 0.3s',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
+                          background: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 12px 32px rgba(59, 130, 246, 0.5)',
+                          boxShadow: '0 12px 32px rgba(37, 99, 235, 0.45)',
                       },
                       '&:disabled': {
                         background: mode === 'dark' ? '#475569' : '#CBD5E0',

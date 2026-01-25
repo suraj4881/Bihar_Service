@@ -9,6 +9,9 @@ target/
 logs/
 *.log
 
+# uploads
+uploads/
+
 # node_modules
 node_modules/
 
