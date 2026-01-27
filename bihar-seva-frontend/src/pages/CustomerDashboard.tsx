@@ -34,6 +34,12 @@ import {
   Divider,
   CardMedia,
   Rating,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Tooltip,
 } from '@mui/material';
 import {
   Dashboard,
@@ -53,6 +59,7 @@ import {
   Phone,
   Email,
   SupportAgent,
+  Delete,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -121,6 +128,16 @@ const CustomerDashboard: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [clearHistoryDialogOpen, setClearHistoryDialogOpen] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [bookingToRate, setBookingToRate] = useState<any>(null);
+  const [ratingValue, setRatingValue] = useState<number>(0);
+  const [ratingFeedback, setRatingFeedback] = useState<string>('');
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   const fetchCustomerStats = async () => {
     if (!user?.id) return;
@@ -322,13 +339,163 @@ const CustomerDashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteClick = (bookingId: string) => {
+    setBookingToDelete(bookingId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!bookingToDelete || !user?.id) return;
+    
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/bookings/${bookingToDelete}?userId=${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        // Refresh bookings list
+        fetchBookings();
+        setDeleteDialogOpen(false);
+        setBookingToDelete(null);
+      } else {
+        alert(data.message || 'Failed to delete booking');
+      }
+    } catch (error) {
+      alert('Error deleting booking. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setBookingToDelete(null);
+  };
+
+  const handleClearHistoryClick = () => {
+    setClearHistoryDialogOpen(true);
+  };
+
+  const handleClearHistoryConfirm = async () => {
+    if (!user?.id) return;
+    
+    setClearingHistory(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setClearingHistory(false);
+        return;
+      }
+      
+      // Delete all cancelled and completed bookings
+      const allBookings = bookings.filter(b => 
+        b.status === 'CANCELLED' || b.status === 'COMPLETED'
+      );
+      
+      if (allBookings.length === 0) {
+        setClearHistoryDialogOpen(false);
+        setClearingHistory(false);
+        return;
+      }
+      
+      // Delete all bookings in parallel
+      const deletePromises = allBookings.map(async (booking) => {
+        try {
+          const response = await fetch(`http://localhost:8080/api/bookings/${booking.id}?userId=${user.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          return response.ok;
+        } catch (error) {
+          return false;
+        }
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Refresh bookings and stats
+      await fetchBookings();
+      await fetchCustomerStats();
+      setClearHistoryDialogOpen(false);
+    } catch (error) {
+      // Error handled silently
+    } finally {
+      setClearingHistory(false);
+    }
+  };
+
+  const handleClearHistoryCancel = () => {
+    setClearHistoryDialogOpen(false);
+  };
+
+  const handleRateClick = (booking: any) => {
+    setBookingToRate(booking);
+    setRatingValue(booking.customerRating || 0);
+    setRatingFeedback(booking.customerFeedback || '');
+    setRatingDialogOpen(true);
+  };
+
+  const handleRatingCancel = () => {
+    setRatingDialogOpen(false);
+    setBookingToRate(null);
+    setRatingValue(0);
+    setRatingFeedback('');
+  };
+
+  const handleRatingSubmit = async () => {
+    if (!bookingToRate || !ratingValue || ratingValue < 1 || ratingValue > 5) {
+      return;
+    }
+
+    setSubmittingRating(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSubmittingRating(false);
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:8080/api/bookings/${bookingToRate.id}/rating?rating=${ratingValue}&feedback=${encodeURIComponent(ratingFeedback || '')}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Refresh bookings and stats
+        await fetchBookings();
+        await fetchCustomerStats();
+        handleRatingCancel();
+      }
+    } catch (error) {
+      // Error handled silently
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   useEffect(() => {
-    if (tabValue === 0 || tabValue === 1) {
+    if (tabValue === 0 || tabValue === 1 || tabValue === 3) {
       fetchBookings();
     } else if (tabValue === 2) {
       fetchFavorites();
-    } else if (tabValue === 3) {
-      fetchBookings();
     }
   }, [tabValue]);
 
@@ -343,6 +510,19 @@ const CustomerDashboard: React.FC = () => {
     }, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
+
+  // Auto-refresh bookings every 15 seconds to reflect provider actions (like completing service)
+  useEffect(() => {
+    if (!user?.id) return;
+    const interval = setInterval(() => {
+      // Only refresh if on bookings-related tabs
+      if (tabValue === 0 || tabValue === 1 || tabValue === 3) {
+        fetchBookings();
+        fetchCustomerStats();
+      }
+    }, 15000); // Refresh every 15 seconds
+    return () => clearInterval(interval);
+  }, [user?.id, tabValue]);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -600,31 +780,71 @@ const CustomerDashboard: React.FC = () => {
                     ) : (
                       <List>
                         {bookings
-                          .filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS')
+                          .filter(b => b.status === 'PENDING' || b.status === 'CONFIRMED' || b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')
+                          .sort((a, b) => {
+                            // Show COMPLETED first, then others
+                            if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return -1;
+                            if (a.status !== 'COMPLETED' && b.status === 'COMPLETED') return 1;
+                            return 0;
+                          })
                           .slice(0, 2)
                           .map((booking) => (
-                            <ListItem key={booking.id} sx={{ borderBottom: '1px solid #eee', mb: 1 }}>
+                            <ListItem 
+                              key={booking.id} 
+                              sx={{ 
+                                borderBottom: '1px solid #eee', 
+                                mb: 1,
+                                bgcolor: booking.status === 'COMPLETED' ? '#F0FDF4' : 'transparent',
+                                borderRadius: booking.status === 'COMPLETED' ? 2 : 0,
+                                p: booking.status === 'COMPLETED' ? 1 : 0,
+                              }}
+                            >
                               <ListItemIcon>
-                                <Assignment color="primary" />
+                                {booking.status === 'COMPLETED' ? (
+                                  <CheckCircle color="success" />
+                                ) : (
+                                  <Assignment color="primary" />
+                                )}
                               </ListItemIcon>
                               <ListItemText
-                                primary={booking.serviceName || booking.service}
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                      {booking.serviceName || booking.service}
+                                    </Typography>
+                                    {booking.status === 'COMPLETED' && (
+                                      <Chip 
+                                        label="Completed" 
+                                        color="success" 
+                                        size="small" 
+                                        icon={<CheckCircle />}
+                                        sx={{ fontWeight: 700 }}
+                                      />
+                                    )}
+                                  </Box>
+                                }
                                 secondary={
                                   <>
                                     <Box component="span" sx={{ display: 'block' }}>
                                       Provider: {booking.providerName || 'N/A'}
                                     </Box>
                                     <Box component="span" sx={{ display: 'block', mt: 0.5 }}>
-                                      Scheduled: {booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleString() : 'Not scheduled'}
+                                      {booking.status === 'COMPLETED' && booking.completedDate ? (
+                                        <>Completed: {new Date(booking.completedDate).toLocaleString()}</>
+                                      ) : (
+                                        <>Scheduled: {booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleString() : 'Not scheduled'}</>
+                                      )}
                                     </Box>
                                   </>
                                 }
                               />
-                              <Chip
-                                label={getBookingStatusLabel(booking.status)}
-                                color={getBookingStatusColor(booking.status)}
-                                size="small"
-                              />
+                              {booking.status !== 'COMPLETED' && (
+                                <Chip
+                                  label={getBookingStatusLabel(booking.status)}
+                                  color={getBookingStatusColor(booking.status)}
+                                  size="small"
+                                />
+                              )}
                             </ListItem>
                           ))}
                       </List>
@@ -698,9 +918,14 @@ const CustomerDashboard: React.FC = () => {
             <Card>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    All Bookings
-                  </Typography>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      Recent Bookings
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Showing recent 5 orders
+                    </Typography>
+                  </Box>
                   <Chip label={`${stats.activeBookings} Active`} color="warning" />
                 </Box>
                 <TableContainer>
@@ -713,59 +938,91 @@ const CustomerDashboard: React.FC = () => {
                         <TableCell>Amount</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Actions</TableCell>
+                        <TableCell>Delete</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {bookingsLoading ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={7} align="center">
                             <CircularProgress />
                           </TableCell>
                         </TableRow>
                       ) : bookings.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={7} align="center">
                             <Typography variant="body2" color="text.secondary">
                               No bookings found
                             </Typography>
                           </TableCell>
                         </TableRow>
                       ) : (
-                        bookings.map((booking) => (
-                          <TableRow key={booking.id}>
-                            <TableCell>{booking.serviceName || booking.service}</TableCell>
-                            <TableCell>
-                              <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                  {booking.providerName || 'N/A'}
-                                </Typography>
-                                {booking.providerRating && (
-                                  <Rating value={booking.providerRating} readOnly size="small" />
-                                )}
-                              </Box>
-                            </TableCell>
-                            <TableCell>
-                              {booking.scheduledDate 
-                                ? new Date(booking.scheduledDate).toLocaleString() 
-                                : booking.bookingDate 
-                                ? new Date(booking.bookingDate).toLocaleString() 
-                                : 'N/A'}
-                            </TableCell>
-                            <TableCell>₹{booking.totalAmount || booking.price || 0}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={getBookingStatusLabel(booking.status)}
-                                color={getBookingStatusColor(booking.status)}
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Button size="small" variant="outlined" onClick={() => navigate(`/booking/${booking.id}`)}>
-                                View
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        bookings
+                          .sort((a, b) => {
+                            const dateA = a.bookingDate ? new Date(a.bookingDate).getTime() : 0;
+                            const dateB = b.bookingDate ? new Date(b.bookingDate).getTime() : 0;
+                            return dateB - dateA; // Most recent first
+                          })
+                          .slice(0, 5) // Show only recent 5 orders
+                          .map((booking) => (
+                            <TableRow key={booking.id}>
+                              <TableCell>{booking.serviceName || booking.service}</TableCell>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {booking.providerName || 'N/A'}
+                                  </Typography>
+                                  {booking.providerRating && (
+                                    <Rating value={booking.providerRating} readOnly size="small" />
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                {booking.scheduledDate 
+                                  ? new Date(booking.scheduledDate).toLocaleString() 
+                                  : booking.bookingDate 
+                                  ? new Date(booking.bookingDate).toLocaleString() 
+                                  : 'N/A'}
+                              </TableCell>
+                              <TableCell>₹{booking.totalAmount || booking.price || 0}</TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Chip
+                                    label={getBookingStatusLabel(booking.status)}
+                                    color={getBookingStatusColor(booking.status)}
+                                    size="small"
+                                    sx={{ fontWeight: 600 }}
+                                  />
+                                  {booking.status === 'COMPLETED' && (
+                                    <CheckCircle sx={{ color: '#10B981', fontSize: 18 }} />
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell>
+                                <Button size="small" variant="outlined" onClick={() => navigate(`/booking/${booking.id}`)}>
+                                  View
+                                </Button>
+                              </TableCell>
+                              <TableCell>
+                                <Tooltip title={booking.status === 'CANCELLED' || booking.status === 'COMPLETED' ? "Delete Booking" : "Can only delete cancelled or completed bookings"}>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => handleDeleteClick(booking.id)}
+                                      disabled={booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED'}
+                                      sx={{ 
+                                        opacity: (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') ? 1 : 0.3,
+                                        cursor: (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') ? 'pointer' : 'not-allowed'
+                                      }}
+                                    >
+                                      <Delete fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </TableCell>
+                            </TableRow>
+                          ))
                       )}
                     </TableBody>
                   </Table>
@@ -852,9 +1109,21 @@ const CustomerDashboard: React.FC = () => {
           <TabPanel value={tabValue} index={3}>
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
-                  Booking History
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Booking History
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    startIcon={<Delete />}
+                    onClick={handleClearHistoryClick}
+                    disabled={bookings.filter(b => b.status === 'CANCELLED' || b.status === 'COMPLETED').length === 0}
+                  >
+                    Clear History
+                  </Button>
+                </Box>
                 <TableContainer>
                   <Table>
                     <TableHead>
@@ -865,49 +1134,109 @@ const CustomerDashboard: React.FC = () => {
                         <TableCell>Amount</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Rating</TableCell>
+                        <TableCell>Delete</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {bookingsLoading ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={7} align="center">
                             <CircularProgress />
                           </TableCell>
                         </TableRow>
-                      ) : bookings.filter(b => b.status === 'COMPLETED').length === 0 ? (
+                      ) : bookings.filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED').length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={7} align="center">
                             <Typography variant="body2" color="text.secondary">
-                              No completed bookings
+                              No booking history found
                             </Typography>
                           </TableCell>
                         </TableRow>
                       ) : (
                         bookings
-                          .filter(b => b.status === 'COMPLETED')
+                          .filter(b => b.status === 'COMPLETED' || b.status === 'CANCELLED')
+                          .sort((a, b) => {
+                            const dateA = a.bookingDate ? new Date(a.bookingDate).getTime() : 0;
+                            const dateB = b.bookingDate ? new Date(b.bookingDate).getTime() : 0;
+                            return dateB - dateA; // Most recent first
+                          })
                           .map((booking) => (
                             <TableRow key={booking.id}>
                               <TableCell>{booking.serviceName || booking.service}</TableCell>
-                              <TableCell>{booking.providerName || 'N/A'}</TableCell>
+                              <TableCell>
+                                <Box>
+                                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    {booking.providerName || 'N/A'}
+                                  </Typography>
+                                  {booking.providerRating && (
+                                    <Rating value={booking.providerRating} readOnly size="small" />
+                                  )}
+                                </Box>
+                              </TableCell>
                               <TableCell>
                                 {booking.completedDate 
-                                  ? new Date(booking.completedDate).toLocaleDateString() 
+                                  ? new Date(booking.completedDate).toLocaleString() 
+                                  : booking.scheduledDate
+                                  ? new Date(booking.scheduledDate).toLocaleString()
                                   : booking.bookingDate 
-                                  ? new Date(booking.bookingDate).toLocaleDateString() 
+                                  ? new Date(booking.bookingDate).toLocaleString() 
                                   : 'N/A'}
                               </TableCell>
                               <TableCell>₹{booking.totalAmount || booking.price || 0}</TableCell>
                               <TableCell>
-                                <Chip label="Completed" color="success" size="small" />
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Chip
+                                    label={getBookingStatusLabel(booking.status)}
+                                    color={getBookingStatusColor(booking.status)}
+                                    size="small"
+                                    sx={{ fontWeight: 600 }}
+                                  />
+                                  {booking.status === 'COMPLETED' && (
+                                    <CheckCircle sx={{ color: '#10B981', fontSize: 18 }} />
+                                  )}
+                                </Box>
                               </TableCell>
                               <TableCell>
                                 {booking.customerRating ? (
-                                  <Rating value={booking.customerRating} readOnly size="small" />
-                                ) : (
-                                  <Button size="small" variant="outlined" onClick={() => navigate(`/booking/${booking.id}/review`)}>
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                    <Rating value={booking.customerRating} readOnly size="small" />
+                                    {booking.customerFeedback && (
+                                      <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {booking.customerFeedback}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                ) : booking.status === 'COMPLETED' ? (
+                                  <Button 
+                                    size="small" 
+                                    variant="outlined" 
+                                    color="primary"
+                                    startIcon={<Star />}
+                                    onClick={() => handleRateClick(booking)}
+                                  >
                                     Rate
                                   </Button>
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary">-</Typography>
                                 )}
+                              </TableCell>
+                              <TableCell>
+                                <Tooltip title={booking.status === 'CANCELLED' || booking.status === 'COMPLETED' ? "Delete Booking" : "Can only delete cancelled or completed bookings"}>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => handleDeleteClick(booking.id)}
+                                      disabled={booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED'}
+                                      sx={{ 
+                                        opacity: (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') ? 1 : 0.3,
+                                        cursor: (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') ? 'pointer' : 'not-allowed'
+                                      }}
+                                    >
+                                      <Delete fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
                               </TableCell>
                             </TableRow>
                           ))
@@ -920,6 +1249,151 @@ const CustomerDashboard: React.FC = () => {
           </TabPanel>
         </Paper>
       </Container>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ fontWeight: 700, color: '#DC2626' }}>
+          Delete Booking
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this booking? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={deleting}
+            startIcon={deleting ? <CircularProgress size={20} /> : <Delete />}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Clear History Confirmation Dialog */}
+      <Dialog
+        open={clearHistoryDialogOpen}
+        onClose={handleClearHistoryCancel}
+        aria-labelledby="clear-history-dialog-title"
+        aria-describedby="clear-history-dialog-description"
+      >
+        <DialogTitle id="clear-history-dialog-title" sx={{ fontWeight: 700, color: '#DC2626' }}>
+          Clear Booking History
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="clear-history-dialog-description">
+            Are you sure you want to delete all cancelled and completed bookings from your history? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClearHistoryCancel} disabled={clearingHistory}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleClearHistoryConfirm}
+            color="error"
+            variant="contained"
+            disabled={clearingHistory}
+            startIcon={clearingHistory ? <CircularProgress size={20} /> : <Delete />}
+          >
+            {clearingHistory ? 'Clearing...' : 'Clear All'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Rating Dialog */}
+      <Dialog
+        open={ratingDialogOpen}
+        onClose={handleRatingCancel}
+        aria-labelledby="rating-dialog-title"
+        aria-describedby="rating-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="rating-dialog-title" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Star sx={{ color: '#FFB800', fontSize: 28 }} />
+          Rate Your Service
+        </DialogTitle>
+        <DialogContent>
+          {bookingToRate && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Service: <strong>{bookingToRate.serviceName || bookingToRate.service}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Provider: <strong>{bookingToRate.providerName || 'N/A'}</strong>
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
+              How would you rate this service?
+            </Typography>
+            <Rating
+              value={ratingValue}
+              onChange={(event, newValue) => {
+                if (newValue !== null) {
+                  setRatingValue(newValue);
+                }
+              }}
+              size="large"
+              sx={{ fontSize: '2.5rem' }}
+            />
+            {ratingValue > 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {ratingValue === 5 && 'Excellent!'}
+                {ratingValue === 4 && 'Very Good!'}
+                {ratingValue === 3 && 'Good!'}
+                {ratingValue === 2 && 'Fair'}
+                {ratingValue === 1 && 'Poor'}
+              </Typography>
+            )}
+          </Box>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Share your feedback (optional)"
+            placeholder="Tell us about your experience..."
+            value={ratingFeedback}
+            onChange={(e) => setRatingFeedback(e.target.value)}
+            variant="outlined"
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button 
+            onClick={handleRatingCancel} 
+            disabled={submittingRating}
+            variant="outlined"
+            sx={{ minWidth: 100 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRatingSubmit}
+            variant="contained"
+            color="primary"
+            disabled={submittingRating || ratingValue < 1 || ratingValue > 5}
+            startIcon={submittingRating ? <CircularProgress size={20} /> : <Star />}
+            sx={{ minWidth: 150, fontWeight: 600 }}
+          >
+            {submittingRating ? 'Submitting...' : 'Submit Rating'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <SupportChatFloatingWidget userId={user?.id || ''} userRole="CUSTOMER" userName={user?.name || 'Customer'} />
     </Box>
   );

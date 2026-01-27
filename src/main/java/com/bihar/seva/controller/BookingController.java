@@ -403,4 +403,19 @@ public class BookingController {
                 .body(new ApiResponse(false, e.getMessage(), null));
         }
     }
+    
+    // Delete booking (only for cancelled or completed bookings)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteBooking(
+            @PathVariable String id,
+            @RequestParam String userId) {
+        try {
+            bookingService.deleteBooking(id, userId);
+            return ResponseEntity.ok(new ApiResponse(true, "Booking deleted successfully", null));
+        } catch (Exception e) {
+            log.error("Error deleting booking: ", e);
+            return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage(), null));
+        }
+    }
 }

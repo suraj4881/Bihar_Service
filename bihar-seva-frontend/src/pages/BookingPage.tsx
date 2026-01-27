@@ -24,6 +24,10 @@ import {
   Avatar,
   Autocomplete,
   MenuItem,
+  StepConnector,
+  stepConnectorClasses,
+  styled,
+  alpha,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -37,7 +41,13 @@ import {
   Payment,
   CheckCircle,
   MyLocation,
-  Receipt,
+  AccountBalanceWallet,
+  CreditCard,
+  AccountBalance,
+  Security,
+  Lock,
+  VerifiedUser,
+  ArrowForward,
 } from '@mui/icons-material';
 import AppBar from '../components/AppBar';
 import { BIHAR_CITIES } from '../utils/constants';
@@ -77,8 +87,67 @@ interface BookingDetail {
   arrivedAt?: string;
 }
 
-const UPI_ID = 'quickseva@upi';
-const UPI_NAME = 'QuickSeva Bihar';
+
+// Styled Stepper Connector
+const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
+  [`&.${stepConnectorClasses.alternativeLabel}`]: {
+    top: 22,
+  },
+  [`&.${stepConnectorClasses.active}`]: {
+    [`& .${stepConnectorClasses.line}`]: {
+      backgroundImage: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+    },
+  },
+  [`&.${stepConnectorClasses.completed}`]: {
+    [`& .${stepConnectorClasses.line}`]: {
+      backgroundImage: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+    },
+  },
+  [`& .${stepConnectorClasses.line}`]: {
+    height: 3,
+    border: 0,
+    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#eaeaf0',
+    borderRadius: 1,
+  },
+}));
+
+// Styled Step Icon
+const StepIconRoot = styled('div')<{ ownerState: { active?: boolean; completed?: boolean } }>(
+  ({ theme, ownerState }) => ({
+    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : '#ccc',
+    zIndex: 1,
+    color: '#fff',
+    width: 50,
+    height: 50,
+    display: 'flex',
+    borderRadius: '50%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...(ownerState.active && {
+      backgroundImage: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+      boxShadow: '0 4px 10px 0 rgba(255, 107, 53, 0.4)',
+    }),
+    ...(ownerState.completed && {
+      backgroundImage: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+    }),
+  })
+);
+
+function StepIcon(props: { active?: boolean; completed?: boolean; icon: number }) {
+  const { active, completed, icon } = props;
+  const icons: { [index: string]: React.ReactElement } = {
+    1: <Home />,
+    2: <CalendarToday />,
+    3: <Payment />,
+    4: <CheckCircle />,
+  };
+
+  return (
+    <StepIconRoot ownerState={{ completed, active }}>
+      {icons[String(icon)]}
+    </StepIconRoot>
+  );
+}
 
 const BookingPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -126,18 +195,6 @@ const BookingPage: React.FC = () => {
   });
   const [paymentSummary, setPaymentSummary] = useState<any | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
-
-  const getUpiUri = () => {
-    const amount = paymentSummary?.totalAmount ?? provider?.price ?? 0;
-    const params = new URLSearchParams({
-      pa: UPI_ID,
-      pn: UPI_NAME,
-      am: amount ? amount.toString() : '0',
-      cu: 'INR',
-      tn: 'Service booking payment',
-    });
-    return `upi://pay?${params.toString()}`;
-  };
 
   useEffect(() => {
     loadBookingOrService();
@@ -294,10 +351,6 @@ const BookingPage: React.FC = () => {
         setError('Please select a payment method');
         return;
       }
-      if (bookingData.paymentMethod !== 'WALLET' && !bookingData.transactionId) {
-        setError('Please enter a transaction ID');
-        return;
-      }
     }
     setError('');
     setActiveStep(prev => prev + 1);
@@ -314,10 +367,6 @@ const BookingPage: React.FC = () => {
     }
     if (!bookingData.paymentMethod) {
       setError('Please select a payment method');
-      return;
-    }
-    if (bookingData.paymentMethod !== 'WALLET' && !bookingData.transactionId) {
-      setError('Please enter a transaction ID');
       return;
     }
 
@@ -367,28 +416,96 @@ const BookingPage: React.FC = () => {
           return;
         }
 
-        const paymentResponse = await fetch('http://localhost:8080/api/payments/process', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({
-            bookingId,
-            paymentMethod: bookingData.paymentMethod,
-            transactionId: bookingData.transactionId,
-          }),
-        });
-        const paymentData = await paymentResponse.json();
+        if (bookingData.paymentMethod === 'WALLET') {
+          const paymentResponse = await fetch('http://localhost:8080/api/payments/process', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({
+              bookingId,
+              paymentMethod: 'WALLET',
+              transactionId: '',
+            }),
+          });
+          const paymentData = await paymentResponse.json();
 
-        if (paymentData.success && paymentData.data?.paymentStatus === 'SUCCESS') {
-          setSuccess('Payment successful! Booking confirmed.');
-          setTimeout(() => navigate('/customer-dashboard'), 2000);
-        } else if (paymentData.success && paymentData.data?.paymentStatus === 'PENDING_VERIFICATION') {
-          setSuccess('Payment submitted. Booking will be confirmed after admin verification.');
-          setTimeout(() => navigate('/customer-dashboard'), 2000);
-        } else {
-          setError(paymentData.message || 'Payment failed. Booking pending.');
+          if (paymentData.success && paymentData.data?.paymentStatus === 'SUCCESS') {
+            setSuccess('Payment successful! Booking confirmed.');
+            setTimeout(() => navigate('/customer-dashboard'), 2000);
+          } else {
+            setError(paymentData.message || 'Payment failed. Booking pending.');
+          }
+          return;
+        }
+
+        if (bookingData.paymentMethod === 'RAZORPAY') {
+          const orderResponse = await fetch('http://localhost:8080/api/payments/razorpay/order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId }),
+          });
+          const orderData = await orderResponse.json();
+          if (!orderData.success) {
+            setError(orderData.message || 'Failed to create payment order.');
+            return;
+          }
+
+          const scriptLoaded = await new Promise<boolean>((resolve) => {
+            if ((window as any).Razorpay) {
+              resolve(true);
+              return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+          });
+
+          if (!scriptLoaded) {
+            setError('Failed to load Razorpay checkout.');
+            return;
+          }
+
+          const options = {
+            key: orderData.data.keyId,
+            amount: orderData.data.amount,
+            currency: orderData.data.currency,
+            name: 'BiharSeva',
+            description: 'Service Booking Payment',
+            order_id: orderData.data.orderId,
+            handler: async (response: any) => {
+              const verifyRes = await fetch('http://localhost:8080/api/payments/razorpay/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  bookingId,
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (verifyData.success) {
+                setSuccess('Payment successful! Booking confirmed.');
+                setTimeout(() => navigate('/customer-dashboard'), 2000);
+              } else {
+                setError(verifyData.message || 'Payment verification failed.');
+              }
+            },
+            prefill: {
+              name: bookingData.contactName,
+              contact: bookingData.contactPhone,
+            },
+            theme: {
+              color: '#2563EB',
+            },
+          };
+          const razorpay = new (window as any).Razorpay(options);
+          razorpay.open();
+          return;
         }
       } else {
         setError(data.message || 'Booking failed');
@@ -974,169 +1091,374 @@ const BookingPage: React.FC = () => {
         <Grid container spacing={4}>
           {/* Main Booking Form */}
           <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent sx={{ p: 4 }}>
-                <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 1 }}>
-                  Book Service
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                  Fill in the details to book your service
-                </Typography>
+            <Card 
+              sx={{
+                borderRadius: 4,
+                boxShadow: '0 10px 40px rgba(15, 23, 42, 0.08)',
+                border: '1px solid #E9EEF5',
+                overflow: 'hidden',
+              }}
+            >
+              <CardContent sx={{ p: { xs: 3, md: 5 } }}>
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h4" gutterBottom sx={{ fontWeight: 800, mb: 1, color: '#0F172A', fontFamily: '"Poppins", sans-serif' }}>
+                    Book Service
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem' }}>
+                    Complete the steps below to book your service with ease
+                  </Typography>
+                </Box>
 
                 {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
                 {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
-                {/* Stepper */}
-                <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                  {steps.map((label) => (
-                    <Step key={label}>
-                      <StepLabel>{label}</StepLabel>
-                    </Step>
-                  ))}
-                </Stepper>
+                {/* Enhanced Stepper */}
+                <Box sx={{ mb: 5 }}>
+                  <Stepper 
+                    activeStep={activeStep} 
+                    connector={<ColorlibConnector />}
+                    sx={{
+                      '& .MuiStepLabel-root': {
+                        '& .MuiStepLabel-label': {
+                          fontWeight: 600,
+                          fontSize: '0.95rem',
+                          color: '#64748B',
+                          '&.Mui-active': {
+                            color: '#FF6B35',
+                            fontWeight: 700,
+                          },
+                          '&.Mui-completed': {
+                            color: '#FF6B35',
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    {steps.map((label, index) => (
+                      <Step key={label}>
+                        <StepLabel StepIconComponent={StepIcon}>
+                          <Typography variant="body2" sx={{ fontWeight: activeStep === index ? 700 : 500, mt: 1 }}>
+                            {label}
+                          </Typography>
+                        </StepLabel>
+                      </Step>
+                    ))}
+                  </Stepper>
+                </Box>
 
                 {/* Step Content */}
                 {activeStep === 0 && (
                   <Box>
-                    <TextField
-                      fullWidth
-                      label="Service Type"
-                      value={bookingData.serviceType}
-                      InputProps={{
-                        readOnly: true,
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Home color="action" />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{ mb: 3 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Problem Description"
-                      multiline
-                      rows={4}
-                      value={bookingData.description}
-                      onChange={(e) => handleChange('description', e.target.value)}
-                      placeholder="Describe your issue in detail..."
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Notes color="action" />
-                          </InputAdornment>
-                        ),
-                      }}
-                      required
-                    />
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Home sx={{ color: '#FF6B35' }} />
+                        Service Information
+                      </Typography>
+                      <Card 
+                        variant="outlined" 
+                        sx={{ 
+                          mb: 3,
+                          borderRadius: 3,
+                          border: '2px solid #E9EEF5',
+                          bgcolor: '#FAFBFC',
+                          '&:hover': {
+                            borderColor: '#FF6B35',
+                            boxShadow: '0 4px 12px rgba(255, 107, 53, 0.1)',
+                          },
+                        }}
+                      >
+                        <CardContent>
+                          <TextField
+                            fullWidth
+                            label="Service Type"
+                            value={bookingData.serviceType}
+                            InputProps={{
+                              readOnly: true,
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <Home sx={{ color: '#FF6B35' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                bgcolor: '#FFFFFF',
+                                '& fieldset': {
+                                  borderColor: '#E9EEF5',
+                                },
+                              },
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Notes sx={{ color: '#FF6B35' }} />
+                        Describe Your Requirement
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        label="Problem Description"
+                        multiline
+                        rows={5}
+                        value={bookingData.description}
+                        onChange={(e) => handleChange('description', e.target.value)}
+                        placeholder="Please describe your service requirement in detail. Include any specific issues, preferences, or special instructions..."
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
+                              <Notes sx={{ color: '#FF6B35' }} />
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                              borderColor: '#E9EEF5',
+                              borderWidth: 2,
+                            },
+                            '&:hover fieldset': {
+                              borderColor: '#FF6B35',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#FF6B35',
+                              borderWidth: 2,
+                            },
+                          },
+                        }}
+                        required
+                      />
+                    </Box>
                   </Box>
                 )}
 
                 {activeStep === 1 && (
                   <Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          type="date"
-                          label="Preferred Date"
-                          value={bookingData.scheduledDate}
-                          onChange={(e) => handleChange('scheduledDate', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                          inputProps={{ min: new Date().toISOString().split('T')[0] }}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <CalendarToday color="action" />
-                              </InputAdornment>
-                            ),
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CalendarToday sx={{ color: '#FF6B35' }} />
+                      Schedule & Location Details
+                    </Typography>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12}>
+                        <Paper 
+                          elevation={0}
+                          sx={{ 
+                            p: 2.5, 
+                            borderRadius: 3, 
+                            bgcolor: '#F8FAFC',
+                            border: '2px solid #E9EEF5',
                           }}
-                          required
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          type="time"
-                          label="Preferred Time"
-                          value={bookingData.scheduledTime}
-                          onChange={(e) => handleChange('scheduledTime', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <AccessTime color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                          required
-                        />
+                        >
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#475569', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <AccessTime sx={{ fontSize: 18, color: '#FF6B35' }} />
+                            Preferred Date & Time
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                fullWidth
+                                type="date"
+                                label="Preferred Date"
+                                value={bookingData.scheduledDate}
+                                onChange={(e) => handleChange('scheduledDate', e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{ min: new Date().toISOString().split('T')[0] }}
+                                InputProps={{
+                                  startAdornment: (
+                                    <InputAdornment position="start">
+                                      <CalendarToday sx={{ color: '#FF6B35' }} />
+                                    </InputAdornment>
+                                  ),
+                                }}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#FFFFFF',
+                                    '& fieldset': {
+                                      borderColor: '#E9EEF5',
+                                      borderWidth: 2,
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: '#FF6B35',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#FF6B35',
+                                      borderWidth: 2,
+                                    },
+                                  },
+                                }}
+                                required
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <TextField
+                                fullWidth
+                                type="time"
+                                label="Preferred Time"
+                                value={bookingData.scheduledTime}
+                                onChange={(e) => handleChange('scheduledTime', e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                InputProps={{
+                                  startAdornment: (
+                                    <InputAdornment position="start">
+                                      <AccessTime sx={{ color: '#FF6B35' }} />
+                                    </InputAdornment>
+                                  ),
+                                }}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#FFFFFF',
+                                    '& fieldset': {
+                                      borderColor: '#E9EEF5',
+                                      borderWidth: 2,
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: '#FF6B35',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#FF6B35',
+                                      borderWidth: 2,
+                                    },
+                                  },
+                                }}
+                                required
+                              />
+                            </Grid>
+                          </Grid>
+                        </Paper>
                       </Grid>
                       <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="Service Address"
-                          multiline
-                          rows={2}
-                          value={bookingData.address}
-                          onChange={(e) => handleChange('address', e.target.value)}
-                          placeholder="House no., street, area..."
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Home color="action" />
-                              </InputAdornment>
-                            ),
+                        <Paper 
+                          elevation={0}
+                          sx={{ 
+                            p: 2.5, 
+                            borderRadius: 3, 
+                            bgcolor: '#F8FAFC',
+                            border: '2px solid #E9EEF5',
                           }}
-                          required
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={8}>
-                        <Autocomplete
-                          options={BIHAR_CITIES}
-                          value={bookingData.city}
-                          onChange={(_, newValue) => handleChange('city', newValue || 'Patna')}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="City/District"
-                              InputProps={{
-                                ...params.InputProps,
-                                startAdornment: (
-                                  <>
-                                    <InputAdornment position="start">
-                                      <LocationOn color="action" />
+                        >
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#475569', display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <LocationOn sx={{ fontSize: 18, color: '#FF6B35' }} />
+                            Service Location
+                          </Typography>
+                          <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                              <TextField
+                                fullWidth
+                                label="Service Address"
+                                multiline
+                                rows={3}
+                                value={bookingData.address}
+                                onChange={(e) => handleChange('address', e.target.value)}
+                                placeholder="House no., street, area, landmark..."
+                                InputProps={{
+                                  startAdornment: (
+                                    <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
+                                      <Home sx={{ color: '#FF6B35' }} />
                                     </InputAdornment>
-                                    {params.InputProps.startAdornment}
-                                  </>
-                                ),
-                                endAdornment: (
-                                  <>
-                                    {locationLoading ? <CircularProgress size={20} /> : null}
-                                    {params.InputProps.endAdornment}
-                                    <IconButton
-                                      size="small"
-                                      onClick={handleGetLocation}
-                                      disabled={locationLoading}
-                                      title="Get Current Location"
-                                    >
-                                      <MyLocation fontSize="small" />
-                                    </IconButton>
-                                  </>
-                                ),
-                              }}
-                            />
-                          )}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          fullWidth
-                          label="Pincode"
-                          value={bookingData.pincode}
-                          onChange={(e) => handleChange('pincode', e.target.value)}
-                          placeholder="800001"
-                        />
+                                  ),
+                                }}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#FFFFFF',
+                                    '& fieldset': {
+                                      borderColor: '#E9EEF5',
+                                      borderWidth: 2,
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: '#FF6B35',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#FF6B35',
+                                      borderWidth: 2,
+                                    },
+                                  },
+                                }}
+                                required
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={8}>
+                              <Autocomplete
+                                options={BIHAR_CITIES}
+                                value={bookingData.city}
+                                onChange={(_, newValue) => handleChange('city', newValue || 'Patna')}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="City/District"
+                                    InputProps={{
+                                      ...params.InputProps,
+                                      startAdornment: (
+                                        <>
+                                          <InputAdornment position="start">
+                                            <LocationOn sx={{ color: '#FF6B35' }} />
+                                          </InputAdornment>
+                                          {params.InputProps.startAdornment}
+                                        </>
+                                      ),
+                                      endAdornment: (
+                                        <>
+                                          {locationLoading ? <CircularProgress size={20} /> : null}
+                                          {params.InputProps.endAdornment}
+                                          <IconButton
+                                            size="small"
+                                            onClick={handleGetLocation}
+                                            disabled={locationLoading}
+                                            title="Get Current Location"
+                                            sx={{ color: '#FF6B35' }}
+                                          >
+                                            <MyLocation fontSize="small" />
+                                          </IconButton>
+                                        </>
+                                      ),
+                                    }}
+                                    sx={{
+                                      '& .MuiOutlinedInput-root': {
+                                        bgcolor: '#FFFFFF',
+                                        '& fieldset': {
+                                          borderColor: '#E9EEF5',
+                                          borderWidth: 2,
+                                        },
+                                        '&:hover fieldset': {
+                                          borderColor: '#FF6B35',
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                          borderColor: '#FF6B35',
+                                          borderWidth: 2,
+                                        },
+                                      },
+                                    }}
+                                  />
+                                )}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                              <TextField
+                                fullWidth
+                                label="Pincode"
+                                value={bookingData.pincode}
+                                onChange={(e) => handleChange('pincode', e.target.value)}
+                                placeholder="800001"
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    bgcolor: '#FFFFFF',
+                                    '& fieldset': {
+                                      borderColor: '#E9EEF5',
+                                      borderWidth: 2,
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: '#FF6B35',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#FF6B35',
+                                      borderWidth: 2,
+                                    },
+                                  },
+                                }}
+                              />
+                            </Grid>
+                          </Grid>
+                        </Paper>
                       </Grid>
                     </Grid>
                   </Box>
@@ -1144,154 +1466,305 @@ const BookingPage: React.FC = () => {
 
                 {activeStep === 2 && (
                   <Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          select
-                          label="Payment Method"
-                          value={bookingData.paymentMethod}
-                          onChange={(e) => handleChange('paymentMethod', e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Payment color="action" />
-                              </InputAdornment>
-                            ),
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Payment sx={{ color: '#FF6B35' }} />
+                      Select Payment Method
+                    </Typography>
+
+                    {/* Payment Method Cards */}
+                    <Grid container spacing={2} sx={{ mb: 4 }}>
+                      <Grid item xs={12} sm={6}>
+                        <Card
+                          onClick={() => handleChange('paymentMethod', 'WALLET')}
+                          sx={{
+                            cursor: 'pointer',
+                            borderRadius: 3,
+                            border: bookingData.paymentMethod === 'WALLET' ? '3px solid #FF6B35' : '2px solid #E9EEF5',
+                            bgcolor: bookingData.paymentMethod === 'WALLET' ? '#FFF5F0' : '#FFFFFF',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              borderColor: '#FF6B35',
+                              boxShadow: '0 8px 24px rgba(255, 107, 53, 0.15)',
+                              transform: 'translateY(-2px)',
+                            },
+                            position: 'relative',
+                            overflow: 'hidden',
                           }}
                         >
-                          <MenuItem value="">Select method</MenuItem>
-                          <MenuItem value="WALLET">Wallet</MenuItem>
-                          <MenuItem value="UPI">UPI</MenuItem>
-                          <MenuItem value="CARD">Card</MenuItem>
-                        </TextField>
-                      </Grid>
-                      {bookingData.paymentMethod === 'UPI' && (
-                        <Grid item xs={12}>
-                          <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                            <CardContent sx={{ py: 2 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                                Pay via UPI
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                Use this UPI ID to pay, then enter the transaction ID below.
-                              </Typography>
+                          {bookingData.paymentMethod === 'WALLET' && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                bgcolor: '#FF6B35',
+                                borderRadius: '50%',
+                                width: 28,
+                                height: 28,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(255, 107, 53, 0.4)',
+                              }}
+                            >
+                              <CheckCircle sx={{ color: '#FFFFFF', fontSize: 20 }} />
+                            </Box>
+                          )}
+                          <CardContent sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                               <Box
                                 sx={{
+                                  width: 56,
+                                  height: 56,
+                                  borderRadius: 2,
+                                  bgcolor: '#FFF5F0',
                                   display: 'flex',
-                                  flexDirection: { xs: 'column', sm: 'row' },
-                                  gap: 2,
                                   alignItems: 'center',
-                                  mb: 2,
+                                  justifyContent: 'center',
                                 }}
                               >
-                                <Box
-                                  component="img"
-                                  alt="UPI QR"
-                                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getUpiUri())}`}
-                                  sx={{ width: 200, height: 200, border: '1px solid #eee', borderRadius: 1 }}
-                                />
-                                <Box>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Scan QR to pay
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                    Amount: ₹{paymentSummary?.totalAmount ?? provider?.price ?? 0}
-                                  </Typography>
-                                </Box>
+                                <AccountBalanceWallet sx={{ fontSize: 32, color: '#FF6B35' }} />
                               </Box>
-                              <TextField
-                                fullWidth
-                                label="UPI ID"
-                                value={UPI_ID}
-                                InputProps={{ readOnly: true }}
-                              />
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                      )}
-                      {bookingData.paymentMethod && bookingData.paymentMethod !== 'WALLET' && (
-                        <Grid item xs={12}>
-                          <TextField
-                            fullWidth
-                            label="Transaction ID"
-                            value={bookingData.transactionId}
-                            onChange={(e) => handleChange('transactionId', e.target.value)}
-                            placeholder="Enter payment reference"
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <Receipt color="action" />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </Grid>
-                      )}
-                      <Grid item xs={12}>
-                        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                          <CardContent sx={{ py: 2 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-                              Payment Summary
-                            </Typography>
-                            <Grid container spacing={1}>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" color="text.secondary">Base Price</Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                  ₹{paymentSummary?.basePrice ?? provider?.price ?? 0}
+                              <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                  Wallet
                                 </Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" color="text.secondary">Commission</Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                  ₹{paymentSummary?.commissionAmount ?? 0}
+                                <Typography variant="body2" color="text.secondary">
+                                  Pay from your wallet
                                 </Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" color="text.secondary">Total</Typography>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                                  ₹{paymentSummary?.totalAmount ?? provider?.price ?? 0}
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                              <Security sx={{ fontSize: 16, color: '#10B981' }} />
+                              <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600 }}>
+                                Secure & Instant
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Card
+                          onClick={() => handleChange('paymentMethod', 'RAZORPAY')}
+                          sx={{
+                            cursor: 'pointer',
+                            borderRadius: 3,
+                            border: bookingData.paymentMethod === 'RAZORPAY' ? '3px solid #FF6B35' : '2px solid #E9EEF5',
+                            bgcolor: bookingData.paymentMethod === 'RAZORPAY' ? '#FFF5F0' : '#FFFFFF',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              borderColor: '#FF6B35',
+                              boxShadow: '0 8px 24px rgba(255, 107, 53, 0.15)',
+                              transform: 'translateY(-2px)',
+                            },
+                            position: 'relative',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {bookingData.paymentMethod === 'RAZORPAY' && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                bgcolor: '#FF6B35',
+                                borderRadius: '50%',
+                                width: 28,
+                                height: 28,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 8px rgba(255, 107, 53, 0.4)',
+                              }}
+                            >
+                              <CheckCircle sx={{ color: '#FFFFFF', fontSize: 20 }} />
+                            </Box>
+                          )}
+                          <CardContent sx={{ p: 3 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                              <Box
+                                sx={{
+                                  width: 56,
+                                  height: 56,
+                                  borderRadius: 2,
+                                  bgcolor: '#EEF2FF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <CreditCard sx={{ fontSize: 32, color: '#4F46E5' }} />
+                              </Box>
+                              <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                  Razorpay
                                 </Typography>
-                              </Grid>
-                            </Grid>
+                                <Typography variant="body2" color="text.secondary">
+                                  UPI, Cards & More
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                              <Lock sx={{ fontSize: 16, color: '#10B981' }} />
+                              <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 600 }}>
+                                SSL Encrypted
+                              </Typography>
+                            </Box>
                           </CardContent>
                         </Card>
                       </Grid>
                     </Grid>
 
+                    {bookingData.paymentMethod === 'RAZORPAY' && (
+                      <Alert 
+                        severity="info" 
+                        icon={<Security />}
+                        sx={{ 
+                          mb: 3,
+                          borderRadius: 2,
+                          bgcolor: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
+                          '& .MuiAlert-icon': {
+                            color: '#2563EB',
+                          },
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          Secure Payment Gateway
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          You will be redirected to Razorpay's secure checkout to complete the payment. All major payment methods including UPI, Credit/Debit Cards, and Net Banking are supported.
+                        </Typography>
+                      </Alert>
+                    )}
+
+                    {bookingData.paymentMethod === 'WALLET' && (
+                      <Alert 
+                        severity="success" 
+                        icon={<AccountBalanceWallet />}
+                        sx={{ 
+                          mb: 3,
+                          borderRadius: 2,
+                          bgcolor: '#F0FDF4',
+                          border: '1px solid #BBF7D0',
+                          '& .MuiAlert-icon': {
+                            color: '#10B981',
+                          },
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          Instant Payment
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Payment will be processed instantly from your wallet balance. No redirect required.
+                        </Typography>
+                      </Alert>
+                    )}
+
+                    {/* Payment Summary Card */}
+                    <Card 
+                      sx={{ 
+                        borderRadius: 3,
+                        border: '2px solid #E9EEF5',
+                        bgcolor: '#FAFBFC',
+                        mb: 3,
+                      }}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccountBalance sx={{ color: '#FF6B35' }} />
+                          Payment Summary
+                        </Typography>
+                        {paymentLoading ? (
+                          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                            <CircularProgress size={32} />
+                          </Box>
+                        ) : (
+                          <Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid #E9EEF5' }}>
+                              <Typography variant="body1" color="text.secondary">
+                                Base Price
+                              </Typography>
+                              <Typography variant="body1" sx={{ fontWeight: 600, color: '#0F172A' }}>
+                                ₹{paymentSummary?.basePrice ?? provider?.price ?? 0}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid #E9EEF5' }}>
+                              <Typography variant="body1" color="text.secondary">
+                                Platform Commission (10%)
+                              </Typography>
+                              <Typography variant="body1" sx={{ fontWeight: 600, color: '#0F172A' }}>
+                                ₹{paymentSummary?.commissionAmount ?? 0}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                Total Amount
+                              </Typography>
+                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#FF6B35' }}>
+                                ₹{paymentSummary?.totalAmount ?? provider?.price ?? 0}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+
                     <Divider sx={{ my: 3 }} />
 
                     {/* Booking Summary */}
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#0F172A', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckCircle sx={{ color: '#FF6B35' }} />
                       Booking Summary
                     </Typography>
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#F5F5F5' }}>
-                      <Grid container spacing={1}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Service:</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>{bookingData.serviceType}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Date & Time:</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {bookingData.scheduledDate} at {bookingData.scheduledTime}
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 3, 
+                        borderRadius: 3,
+                        bgcolor: '#F8FAFC',
+                        border: '2px solid #E9EEF5',
+                      }}
+                    >
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Home sx={{ fontSize: 18, color: '#FF6B35' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              Service:
+                            </Typography>
+                          </Box>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#0F172A', ml: 4 }}>
+                            {bookingData.serviceType}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Location:</Typography>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <CalendarToday sx={{ fontSize: 18, color: '#FF6B35' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              Date & Time:
+                            </Typography>
+                          </Box>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#0F172A', ml: 4 }}>
+                            {bookingData.scheduledDate ? new Date(bookingData.scheduledDate).toLocaleDateString('en-IN', { 
+                              weekday: 'short', 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            }) : 'Not set'} at {bookingData.scheduledTime || 'Not set'}
+                          </Typography>
                         </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>{bookingData.city}</Typography>
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <LocationOn sx={{ fontSize: 18, color: '#FF6B35' }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              Location:
+                            </Typography>
+                          </Box>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#0F172A', ml: 4 }}>
+                            {bookingData.address ? `${bookingData.address}, ` : ''}{bookingData.city}{bookingData.pincode ? ` - ${bookingData.pincode}` : ''}
+                          </Typography>
                         </Grid>
                       </Grid>
                     </Paper>
@@ -1300,86 +1773,271 @@ const BookingPage: React.FC = () => {
 
                 {activeStep === 3 && (
                   <Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="Contact Person Name"
-                          value={bookingData.contactName}
-                          onChange={(e) => handleChange('contactName', e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Person color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                          required
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          fullWidth
-                          label="Contact Phone"
-                          value={bookingData.contactPhone}
-                          onChange={(e) => handleChange('contactPhone', e.target.value)}
-                          placeholder="98XXXXXXXX"
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Phone color="action" />
-                              </InputAdornment>
-                            ),
-                          }}
-                          required
-                        />
-                      </Grid>
-                    </Grid>
-
-                    <Divider sx={{ my: 3 }} />
-
-                    {/* Booking Summary */}
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                      Booking Summary
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#0F172A', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Person sx={{ color: '#FF6B35' }} />
+                      Contact Information
                     </Typography>
-                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#F5F5F5' }}>
-                      <Grid container spacing={1}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Service:</Typography>
+                    <Paper 
+                      elevation={0}
+                      sx={{ 
+                        p: 3, 
+                        borderRadius: 3, 
+                        bgcolor: '#F8FAFC',
+                        border: '2px solid #E9EEF5',
+                        mb: 4,
+                      }}
+                    >
+                      <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="Contact Person Name"
+                            value={bookingData.contactName}
+                            onChange={(e) => handleChange('contactName', e.target.value)}
+                            placeholder="Enter your full name"
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <Person sx={{ color: '#FF6B35' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                bgcolor: '#FFFFFF',
+                                '& fieldset': {
+                                  borderColor: '#E9EEF5',
+                                  borderWidth: 2,
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: '#FF6B35',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#FF6B35',
+                                  borderWidth: 2,
+                                },
+                              },
+                            }}
+                            required
+                          />
                         </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>{bookingData.serviceType}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Date & Time:</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {bookingData.scheduledDate} at {bookingData.scheduledTime}
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="Contact Phone Number"
+                            value={bookingData.contactPhone}
+                            onChange={(e) => handleChange('contactPhone', e.target.value)}
+                            placeholder="98XXXXXXXX"
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <Phone sx={{ color: '#FF6B35' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                bgcolor: '#FFFFFF',
+                                '& fieldset': {
+                                  borderColor: '#E9EEF5',
+                                  borderWidth: 2,
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: '#FF6B35',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#FF6B35',
+                                  borderWidth: 2,
+                                },
+                              },
+                            }}
+                            required
+                          />
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                            This number will be used for service provider contact and booking updates
                           </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Location:</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>{bookingData.city}</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">Payment:</Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" fontWeight={600}>{bookingData.paymentMethod || '-'}</Typography>
                         </Grid>
                       </Grid>
                     </Paper>
+
+                    <Divider sx={{ my: 3 }} />
+
+                    {/* Final Booking Summary */}
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#0F172A', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <VerifiedUser sx={{ color: '#FF6B35' }} />
+                      Review Your Booking
+                    </Typography>
+                    <Card 
+                      sx={{ 
+                        borderRadius: 3,
+                        border: '2px solid #E9EEF5',
+                        bgcolor: '#FAFBFC',
+                        mb: 3,
+                      }}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 2,
+                                  bgcolor: '#FFF5F0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Home sx={{ color: '#FF6B35' }} />
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                  Service Type
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                  {bookingData.serviceType}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 2,
+                                  bgcolor: '#EEF2FF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <CalendarToday sx={{ color: '#4F46E5' }} />
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                  Scheduled Date & Time
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                  {bookingData.scheduledDate ? new Date(bookingData.scheduledDate).toLocaleDateString('en-IN', { 
+                                    weekday: 'short', 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric' 
+                                  }) : 'Not set'} at {bookingData.scheduledTime || 'Not set'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 2,
+                                  bgcolor: '#E6FFFB',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <LocationOn sx={{ color: '#0F766E' }} />
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                  Location
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                  {bookingData.city}{bookingData.pincode ? ` - ${bookingData.pincode}` : ''}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                              <Box
+                                sx={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 2,
+                                  bgcolor: '#F0FDF4',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Payment sx={{ color: '#10B981' }} />
+                              </Box>
+                              <Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                                  Payment Method
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                  {bookingData.paymentMethod === 'WALLET' ? 'Wallet' : bookingData.paymentMethod === 'RAZORPAY' ? 'Razorpay (UPI/Cards)' : 'Not selected'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <Divider sx={{ my: 2 }} />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A' }}>
+                                Total Amount
+                              </Typography>
+                              <Typography variant="h5" sx={{ fontWeight: 800, color: '#FF6B35' }}>
+                                ₹{paymentSummary?.totalAmount ?? provider?.price ?? 0}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+
+                    <Alert 
+                      severity="info" 
+                      icon={<Security />}
+                      sx={{ 
+                        borderRadius: 2,
+                        bgcolor: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        '& .MuiAlert-icon': {
+                          color: '#2563EB',
+                        },
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        Secure Booking
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Your booking will be confirmed after successful payment. You'll receive a confirmation message with all details.
+                      </Typography>
+                    </Alert>
                   </Box>
                 )}
 
-                {/* Action Buttons */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+                {/* Enhanced Action Buttons */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5, gap: 2 }}>
                   <Button
                     onClick={activeStep === 0 ? () => navigate(-1) : handleBack}
-                    sx={{ px: 4 }}
+                    variant="outlined"
+                    startIcon={<ArrowBack />}
+                    sx={{ 
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 2,
+                      borderColor: '#E9EEF5',
+                      color: '#64748B',
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: '#FF6B35',
+                        color: '#FF6B35',
+                        bgcolor: '#FFF5F0',
+                      },
+                    }}
                   >
                     {activeStep === 0 ? 'Cancel' : 'Back'}
                   </Button>
@@ -1387,18 +2045,36 @@ const BookingPage: React.FC = () => {
                     variant="contained"
                     onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
                     disabled={loading}
+                    endIcon={activeStep === steps.length - 1 ? <CheckCircle /> : <ArrowForward />}
                     sx={{
-                      px: 4,
+                      px: 5,
+                      py: 1.5,
+                      borderRadius: 2,
                       bgcolor: '#FF6B35',
-                      '&:hover': { bgcolor: '#E64A19' },
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)',
+                      '&:hover': { 
+                        bgcolor: '#E64A19',
+                        boxShadow: '0 6px 16px rgba(255, 107, 53, 0.4)',
+                        transform: 'translateY(-1px)',
+                      },
+                      '&:disabled': {
+                        bgcolor: '#CBD5E1',
+                        color: '#FFFFFF',
+                      },
+                      transition: 'all 0.3s ease',
                     }}
                   >
                     {loading ? (
-                      <CircularProgress size={24} color="inherit" />
+                      <>
+                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                        Processing...
+                      </>
                     ) : activeStep === steps.length - 1 ? (
-                      'Pay & Confirm'
+                      'Pay & Confirm Booking'
                     ) : (
-                      'Next'
+                      'Continue'
                     )}
                   </Button>
                 </Box>
@@ -1408,57 +2084,148 @@ const BookingPage: React.FC = () => {
 
           {/* Provider Info Sidebar */}
           <Grid item xs={12} md={4}>
-            <Card sx={{ position: 'sticky', top: 88 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+            <Card 
+              sx={{ 
+                position: 'sticky', 
+                top: 88,
+                borderRadius: 4,
+                boxShadow: '0 10px 40px rgba(15, 23, 42, 0.08)',
+                border: '1px solid #E9EEF5',
+                overflow: 'hidden',
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 3, color: '#0F172A', fontFamily: '"Poppins", sans-serif' }}>
                   Provider Details
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar
-                    src={provider?.profilePhoto}
-                    sx={{ width: 60, height: 60, bgcolor: '#FF6B35', mr: 2 }}
-                  >
-                    {provider?.name[0]}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>
-                      {provider?.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {provider?.skill}
+                
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 3,
+                    bgcolor: '#F8FAFC',
+                    border: '2px solid #E9EEF5',
+                    mb: 3,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar
+                      src={provider?.profilePhoto}
+                      sx={{ 
+                        width: 64, 
+                        height: 64, 
+                        bgcolor: '#FF6B35', 
+                        mr: 2,
+                        border: '3px solid #FFF5F0',
+                        boxShadow: '0 4px 12px rgba(255, 107, 53, 0.2)',
+                      }}
+                    >
+                      {provider?.name?.[0]?.toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: '#0F172A', mb: 0.5 }}>
+                        {provider?.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        {provider?.skill}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Chip
+                    icon={<VerifiedUser sx={{ fontSize: 18 }} />}
+                    label="Verified Provider"
+                    color="success"
+                    sx={{ fontWeight: 600, bgcolor: '#F0FDF4', color: '#10B981' }}
+                  />
+                </Paper>
+                
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 3,
+                    bgcolor: 'linear-gradient(135deg, #FFF5F0 0%, #FEF3F2 100%)',
+                    border: '2px solid #FFE4D6',
+                    mb: 3,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                    <AccountBalance sx={{ color: '#FF6B35', fontSize: 24 }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Estimated Cost
                     </Typography>
                   </Box>
-                </Box>
-                
-                <Divider sx={{ my: 2 }} />
-                
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Estimated Cost
-                  </Typography>
-                  <Typography variant="h5" color="primary" fontWeight={700}>
+                  <Typography variant="h4" sx={{ color: '#FF6B35', fontWeight: 800, mb: 0.5 }}>
                     {formatPrice(provider?.price || 0)}+
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    *Actual cost may vary based on work
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                    *Final cost may vary based on actual work required
                   </Typography>
-                </Box>
+                </Paper>
 
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ my: 2.5 }} />
 
                 <Box>
-                  <Typography variant="body2" gutterBottom>
-                    <CheckCircle fontSize="small" sx={{ mr: 1, verticalAlign: 'middle', color: '#4CAF50' }} />
-                    Verified Provider
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: '#0F172A' }}>
+                    Why Choose Us?
                   </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    <CheckCircle fontSize="small" sx={{ mr: 1, verticalAlign: 'middle', color: '#4CAF50' }} />
-                    Secure Payment
-                  </Typography>
-                  <Typography variant="body2">
-                    <CheckCircle fontSize="small" sx={{ mr: 1, verticalAlign: 'middle', color: '#4CAF50' }} />
-                    100% Satisfaction Guaranteed
-                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          bgcolor: '#F0FDF4',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <CheckCircle sx={{ color: '#10B981', fontSize: 20 }} />
+                      </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#475569' }}>
+                        Verified & Trusted Provider
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          bgcolor: '#EFF6FF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Security sx={{ color: '#2563EB', fontSize: 20 }} />
+                      </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#475569' }}>
+                        Secure Payment Gateway
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          bgcolor: '#FEF3C7',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <CheckCircle sx={{ color: '#F59E0B', fontSize: 20 }} />
+                      </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 500, color: '#475569' }}>
+                        100% Satisfaction Guarantee
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>

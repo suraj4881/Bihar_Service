@@ -499,12 +499,16 @@ const LoginPage: React.FC = () => {
                       label={<Typography variant="body2">{t('login.remember')}</Typography>}
                     />
                     <Link 
-                      href="#" 
+                      component="button"
+                      onClick={() => navigate('/forgot-password')}
                       underline="hover" 
                       sx={{ 
                         fontSize: '0.875rem', 
                         color: '#3B82F6',
                         fontWeight: 600,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
                         '&:hover': {
                           color: '#2563EB',
                         },

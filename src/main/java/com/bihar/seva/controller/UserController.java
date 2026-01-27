@@ -32,6 +32,22 @@ public class UserController {
     @Autowired
     private SMSService smsService;
     
+    @Autowired
+    private com.bihar.seva.service.BookingService bookingService;
+    
+    @GetMapping("/providers/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getProviderStats(
+            @RequestParam String providerId) {
+        try {
+            Map<String, Object> stats = bookingService.getProviderStats(providerId);
+            return ResponseEntity.ok(ApiResponse.success(stats, "Provider stats retrieved successfully"));
+        } catch (Exception e) {
+            logger.error("Error fetching provider stats: ", e);
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Error fetching provider stats: " + e.getMessage()));
+        }
+    }
+    
     @GetMapping
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
         try {

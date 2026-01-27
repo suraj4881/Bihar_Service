@@ -31,6 +31,9 @@ public class AuthService {
     @Autowired
     private EmailVerificationService emailVerificationService;
     
+    @Autowired
+    private EmailOTPService emailOTPService;
+    
     /**
      * Register user - saves to User collection with role
      */
@@ -229,25 +232,27 @@ public class AuthService {
     }
     
     /**
-     * Forgot password - uses User collection
+     * Forgot password - sends OTP to email
      */
-    public boolean forgotPassword(String email) {
+    public Map<String, Object> forgotPassword(String email) {
         LoggingUtil.logMethodEntry(logger, "forgotPassword", email);
         
         try {
-            String resetToken = "reset-token-" + UUID.randomUUID().toString();
-            
             Optional<User> userOpt = userRepository.findByEmail(email);
-            if (userOpt.isPresent()) {
-                User user = userOpt.get();
-                user.setVerificationCode(resetToken);
-                user.setUpdatedAt(LocalDateTime.now());
-                userRepository.save(user);
-                logger.info("✅ Password reset token generated for user - ID: {}", user.getId());
-                return true;
+            if (!userOpt.isPresent()) {
+                throw new RuntimeException("User not found with this email");
             }
             
-            throw new RuntimeException("User not found");
+            // Send OTP via email (email is sent automatically)
+            emailOTPService.sendOTP(email);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("email", email);
+            response.put("message", "OTP sent to email");
+            
+            logger.info("✅ Password reset OTP sent to email: {}", email);
+            
+            return response;
         } catch (Exception ex) {
             LoggingUtil.logError(logger, "forgotPassword", ex, email);
             throw ex;
@@ -255,7 +260,89 @@ public class AuthService {
     }
     
     /**
-     * Reset password - uses User collection
+     * Verify OTP for password reset (doesn't remove OTP - keeps it for password reset step)
+     */
+    public boolean verifyPasswordResetOTP(String email, String otp) {
+        LoggingUtil.logMethodEntry(logger, "verifyPasswordResetOTP", email);
+        
+        try {
+            // Normalize email
+            String normalizedEmail = email.toLowerCase().trim();
+            
+            // Verify OTP (but don't remove it - we need it for password reset)
+            boolean otpValid = emailOTPService.verifyOTP(normalizedEmail, otp);
+            if (!otpValid) {
+                throw new RuntimeException("Invalid or expired OTP");
+            }
+            
+            // Check if user exists
+            Optional<User> userOpt = userRepository.findByEmail(normalizedEmail);
+            if (!userOpt.isPresent()) {
+                throw new RuntimeException("User not found");
+            }
+            
+            logger.info("✅ Password reset OTP verified for email: {}", normalizedEmail);
+            return true;
+        } catch (Exception ex) {
+            LoggingUtil.logError(logger, "verifyPasswordResetOTP", ex, email);
+            throw ex;
+        }
+    }
+    
+    /**
+     * Reset password with OTP verification - Simple: just update password in user collection
+     */
+    public boolean resetPasswordWithOTP(String email, String otp, String newPassword) {
+        LoggingUtil.logMethodEntry(logger, "resetPasswordWithOTP", email);
+        
+        try {
+            // Normalize email
+            String normalizedEmail = email.toLowerCase().trim();
+            String trimmedOtp = otp != null ? otp.trim() : "";
+            
+            // Check if OTP matches (without removing it - it was already verified in step 2)
+            boolean otpValid = emailOTPService.checkOTPMatch(normalizedEmail, trimmedOtp);
+            if (!otpValid) {
+                logger.warn("❌ OTP validation failed for email: {}", normalizedEmail);
+                throw new RuntimeException("Invalid or expired OTP. Please verify OTP again.");
+            }
+            
+            // Find user by email
+            Optional<User> userOpt = userRepository.findByEmail(normalizedEmail);
+            if (!userOpt.isPresent()) {
+                throw new RuntimeException("User not found with email: " + normalizedEmail);
+            }
+            
+            User user = userOpt.get();
+            
+            // Validate new password
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                throw new RuntimeException("Password cannot be empty");
+            }
+            if (newPassword.length() < 6) {
+                throw new RuntimeException("Password must be at least 6 characters");
+            }
+            
+            // Simply update password in user collection
+            String encodedPassword = passwordEncoder.encode(newPassword.trim());
+            user.setPassword(encodedPassword);
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            
+            // Remove OTP after successful password reset
+            emailOTPService.removeOTP(normalizedEmail);
+            
+            LoggingUtil.logDatabaseOperation(logger, "RESET_PASSWORD", "users", user.getId(), "SUCCESS");
+            logger.info("✅ Password reset successfully - User ID: {}, Email: {}", user.getId(), normalizedEmail);
+            return true;
+        } catch (Exception ex) {
+            LoggingUtil.logError(logger, "resetPasswordWithOTP", ex, email);
+            throw ex;
+        }
+    }
+    
+    /**
+     * Reset password - uses token (legacy method for backward compatibility)
      */
     public boolean resetPassword(String token, String newPassword) {
         LoggingUtil.logMethodEntry(logger, "resetPassword", token);

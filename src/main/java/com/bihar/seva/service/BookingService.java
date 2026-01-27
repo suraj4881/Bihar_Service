@@ -2,15 +2,21 @@ package com.bihar.seva.service;
 
 import com.bihar.seva.dto.BookingRequestDTO;
 import com.bihar.seva.model.Booking;
+import com.bihar.seva.model.Review;
+import com.bihar.seva.model.User;
 import com.bihar.seva.repositories.BookingRepository;
 import com.bihar.seva.repositories.UserRepository;
 import com.bihar.seva.repositories.DynamicServiceRepository;
+import com.bihar.seva.repositories.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -21,6 +27,7 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final DynamicServiceRepository dynamicServiceRepository;
+    private final ReviewRepository reviewRepository;
     
     public Booking createBooking(BookingRequestDTO bookingRequest) {
         // Validate user exists
@@ -178,7 +185,168 @@ public class BookingService {
         booking.setCustomerFeedback(customerFeedback);
         booking.setUpdatedAt(LocalDateTime.now());
         
-        log.info("Rating added to booking: {}, rating: {}", id, customerRating);
+        // Create or update Review entry for provider rating
+        try {
+            // Check if review already exists for this booking
+            List<Review> existingReviews = reviewRepository.findByBookingId(id);
+            Review review;
+            
+            if (existingReviews.isEmpty()) {
+                // Create new review
+                review = new Review();
+                review.setBookingId(id);
+                review.setProviderId(booking.getProviderId());
+                review.setCustomerId(booking.getUserId());
+                
+                // Get customer name from user
+                userRepository.findById(booking.getUserId()).ifPresent(user -> {
+                    review.setCustomerName(user.getName());
+                    review.setCustomerPhoto(user.getProfilePhoto());
+                });
+                
+                review.setRating(customerRating);
+                review.setComment(customerFeedback);
+                review.setService(booking.getServiceName() != null ? booking.getServiceName() : booking.getService());
+                review.setCreatedAt(LocalDateTime.now());
+                review.setUpdatedAt(LocalDateTime.now());
+                review.setApproved(true); // Auto-approve customer ratings
+            } else {
+                // Update existing review
+                review = existingReviews.get(0);
+                review.setRating(customerRating);
+                review.setComment(customerFeedback);
+                review.setUpdatedAt(LocalDateTime.now());
+            }
+            
+            reviewRepository.save(review);
+            
+            // Update provider's average rating
+            updateProviderRating(booking.getProviderId());
+            
+            log.info("Rating added to booking: {}, rating: {}, review created/updated", id, customerRating);
+        } catch (Exception e) {
+            log.error("Error creating review for booking {}: ", id, e);
+            // Continue even if review creation fails
+        }
+        
         return bookingRepository.save(booking);
+    }
+    
+    private void updateProviderRating(String providerId) {
+        try {
+            List<Review> reviews = reviewRepository.findByProviderIdAndIsApproved(providerId, true);
+            
+            if (!reviews.isEmpty()) {
+                double avgRating = reviews.stream()
+                    .mapToInt(Review::getRating)
+                    .average()
+                    .orElse(0.0);
+                
+                userRepository.findById(providerId).ifPresent(provider -> {
+                    if ("PROVIDER".equals(provider.getRole())) {
+                        provider.setRating(Math.round(avgRating * 10.0) / 10.0);
+                        userRepository.save(provider);
+                        log.info("Updated provider {} rating to: {}", providerId, avgRating);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            log.error("Error updating provider rating for {}: ", providerId, e);
+        }
+    }
+    
+    public void deleteBooking(String id, String userId) {
+        Booking booking = bookingRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+        
+        // Only allow deletion if user is the customer or provider of this booking
+        if (!booking.getUserId().equals(userId) && !booking.getProviderId().equals(userId)) {
+            throw new RuntimeException("You don't have permission to delete this booking");
+        }
+        
+        // Only allow deletion of cancelled or completed bookings
+        if (!"CANCELLED".equals(booking.getStatus()) && !"COMPLETED".equals(booking.getStatus())) {
+            throw new RuntimeException("Can only delete cancelled or completed bookings");
+        }
+        
+        bookingRepository.deleteById(id);
+        log.info("Booking {} deleted by user: {}", id, userId);
+    }
+    
+    public Map<String, Object> getProviderStats(String providerId) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        try {
+            // Get all bookings for this provider
+            List<Booking> allBookings = bookingRepository.findByProviderId(providerId);
+            
+            // Count bookings by status
+            long totalBookings = allBookings.size();
+            long pendingBookings = allBookings.stream()
+                .filter(b -> "PENDING".equals(b.getStatus()) || "PAYMENT_PENDING".equals(b.getPaymentStatus()))
+                .count();
+            long completedBookings = allBookings.stream()
+                .filter(b -> "COMPLETED".equals(b.getStatus()))
+                .count();
+            
+            // Calculate earnings
+            double totalEarnings = allBookings.stream()
+                .filter(b -> "COMPLETED".equals(b.getStatus()))
+                .mapToDouble(b -> b.getTotalAmount() != 0 ? b.getTotalAmount() : b.getPrice())
+                .sum();
+            
+            // Calculate this month earnings
+            YearMonth currentMonth = YearMonth.now();
+            double thisMonthEarnings = allBookings.stream()
+                .filter(b -> "COMPLETED".equals(b.getStatus()) && 
+                    b.getCompletedDate() != null &&
+                    YearMonth.from(b.getCompletedDate()).equals(currentMonth))
+                .mapToDouble(b -> b.getTotalAmount() != 0 ? b.getTotalAmount() : b.getPrice())
+                .sum();
+            
+            // Get provider rating and reviews
+            List<Review> reviews = reviewRepository.findByProviderIdAndIsApproved(providerId, true);
+            long totalReviews = reviews.size();
+            double averageRating = 0.0;
+            
+            if (!reviews.isEmpty()) {
+                averageRating = reviews.stream()
+                    .mapToInt(Review::getRating)
+                    .average()
+                    .orElse(0.0);
+                averageRating = Math.round(averageRating * 10.0) / 10.0;
+            } else {
+                // Fallback to provider's stored rating
+                Optional<User> providerOpt = userRepository.findById(providerId);
+                if (providerOpt.isPresent()) {
+                    User provider = providerOpt.get();
+                    Double storedRating = provider.getRating();
+                    if (storedRating != null && storedRating > 0) {
+                        averageRating = storedRating;
+                    }
+                }
+            }
+            
+            stats.put("totalBookings", totalBookings);
+            stats.put("pendingBookings", pendingBookings);
+            stats.put("completedBookings", completedBookings);
+            stats.put("totalEarnings", totalEarnings);
+            stats.put("thisMonthEarnings", thisMonthEarnings);
+            stats.put("averageRating", averageRating);
+            stats.put("totalReviews", totalReviews);
+            
+        } catch (Exception e) {
+            log.error("Error calculating provider stats for {}: ", providerId, e);
+            // Return default stats
+            stats.put("totalBookings", 0L);
+            stats.put("pendingBookings", 0L);
+            stats.put("completedBookings", 0L);
+            stats.put("totalEarnings", 0.0);
+            stats.put("thisMonthEarnings", 0.0);
+            stats.put("averageRating", 0.0);
+            stats.put("totalReviews", 0L);
+        }
+        
+        return stats;
     }
 }

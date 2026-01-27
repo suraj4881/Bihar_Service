@@ -33,8 +33,17 @@ import {
   Divider,
   Tooltip,
   TextField,
+  InputAdornment,
   AppBar as MuiAppBar,
   Toolbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Drawer,
+  CardMedia,
+  Rating,
 } from '@mui/material';
 import {
   Dashboard,
@@ -59,6 +68,20 @@ import {
   Info,
   MyLocation,
   SupportAgent,
+  Delete,
+  Done,
+  Search,
+  Menu as MenuIcon,
+  MoreVert,
+  People,
+  TrendingUp,
+  Group,
+  GridView,
+  AccessTime,
+  LocalOffer,
+  Settings,
+  ExitToApp,
+  Rocket,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -96,6 +119,7 @@ const ProviderDashboard: React.FC = () => {
   const { language, setLanguage, t } = useLanguage();
   
   const [tabValue, setTabValue] = useState(0);
+  const [orderFilter, setOrderFilter] = useState('All');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<null | HTMLElement>(null);
   const [loading, setLoading] = useState(false);
@@ -131,6 +155,8 @@ const ProviderDashboard: React.FC = () => {
   const [services, setServices] = useState<any[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const maskPhone = (phone?: string) => {
     if (!phone) return 'N/A';
     const digits = phone.replace(/\D/g, '');
@@ -143,6 +169,12 @@ const ProviderDashboard: React.FC = () => {
   const [liveTrackingBookingId, setLiveTrackingBookingId] = useState<string | null>(null);
   const liveTrackingWatchId = useRef<number | null>(null);
   const lastTrackingSentAt = useRef<number>(0);
+  const customerLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+  const hasAutoArrivedRef = useRef<boolean>(false);
+  const bookingStatusRef = useRef<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const providerId = user?.id || provider?.id;
 
@@ -154,6 +186,7 @@ const ProviderDashboard: React.FC = () => {
     fetchBookings();
     fetchWalletBalance();
     fetchWithdrawRequests();
+    fetchReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerId]);
 
@@ -163,6 +196,8 @@ const ProviderDashboard: React.FC = () => {
     } else if (tabValue === 2) {
       fetchWalletBalance();
       fetchWithdrawRequests();
+    } else if (tabValue === 4) {
+      fetchReviews();
     }
   }, [tabValue]);
 
@@ -271,7 +306,7 @@ const ProviderDashboard: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/providers/stats', {
+      const response = await fetch(`http://localhost:8080/api/users/providers/stats?providerId=${providerId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -396,6 +431,41 @@ const ProviderDashboard: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const fetchReviews = async () => {
+    if (!providerId) return;
+    setReviewsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/reviews/provider/${providerId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          // Sort by most recent first
+          const sortedReviews = data.data.sort((a: any, b: any) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+          setReviews(sortedReviews);
+        } else {
+          setReviews([]);
+        }
+      } else {
+        setReviews([]);
+      }
+    } catch (error) {
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
   };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -531,17 +601,121 @@ const ProviderDashboard: React.FC = () => {
     }
   };
 
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
+
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [bookingToComplete, setBookingToComplete] = useState<string | null>(null);
+
+  const handleCompleteServiceClick = (bookingId: string) => {
+    if (!bookingId) {
+      return;
+    }
+    setBookingToComplete(bookingId);
+    setCompleteDialogOpen(true);
+  };
+
+  const handleCompleteService = async () => {
+    if (!bookingToComplete) {
+      return;
+    }
+    
+    setCompletingBookingId(bookingToComplete);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setCompletingBookingId(null);
+        return;
+      }
+
+      const response = await fetch(`http://localhost:8080/api/bookings/${bookingToComplete}/complete`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Success - refresh everything
+        await fetchBookings();
+        await fetchProviderStats();
+        setCompleteDialogOpen(false);
+        setBookingToComplete(null);
+        // Auto reload page after successful completion
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        setCompletingBookingId(null);
+      }
+    } catch (error: any) {
+      setCompletingBookingId(null);
+    }
+  };
+
+  const handleCompleteCancel = () => {
+    setCompleteDialogOpen(false);
+    setBookingToComplete(null);
+  };
+
+  // Calculate distance between two coordinates using Haversine formula (in meters)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+  };
+
+  // Geocode address to get coordinates
+  const geocodeAddress = async (address: string, city?: string): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      const fullAddress = `${address}${city ? `, ${city}` : ''}, Bihar, India`;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'BiharSevaApp/1.0',
+          },
+        }
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
+        };
+      }
+    } catch (error) {
+      // Fallback: try with Google Geocoding if available or return null
+    }
+    return null;
+  };
+
   const stopLiveTracking = () => {
     if (liveTrackingWatchId.current !== null) {
       navigator.geolocation.clearWatch(liveTrackingWatchId.current);
       liveTrackingWatchId.current = null;
     }
     setLiveTrackingBookingId(null);
+    customerLocationRef.current = null;
+    hasAutoArrivedRef.current = false;
+    bookingStatusRef.current = null;
   };
 
   const startLiveTracking = async (bookingId: string) => {
     stopLiveTracking();
     setLiveTrackingBookingId(bookingId);
+    hasAutoArrivedRef.current = false;
     const token = localStorage.getItem('token');
 
     if (!navigator.geolocation) {
@@ -549,23 +723,90 @@ const ProviderDashboard: React.FC = () => {
       return;
     }
 
+    // Fetch booking details to get customer address
+    let bookingData: any = null;
+    try {
+      const bookingResponse = await fetch(`http://localhost:8080/api/bookings/${bookingId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (bookingResponse.ok) {
+        const bookingResult = await bookingResponse.json();
+        if (bookingResult.success && bookingResult.data) {
+          bookingData = bookingResult.data;
+        }
+      }
+    } catch (error) {
+      // Fallback to bookings state
+      bookingData = bookings.find((b) => b.id === bookingId);
+    }
+
+    // Get customer location from booking address
+    if (bookingData && bookingData.address) {
+      const customerLoc = await geocodeAddress(bookingData.address, bookingData.city);
+      if (customerLoc) {
+        customerLocationRef.current = customerLoc;
+      }
+    }
+
+    // Store booking status for checks
+    bookingStatusRef.current = bookingData?.status || null;
+
     liveTrackingWatchId.current = navigator.geolocation.watchPosition(
       async (position) => {
         const now = Date.now();
         if (now - lastTrackingSentAt.current < 10000) return;
         lastTrackingSentAt.current = now;
+        
+        const providerLat = position.coords.latitude;
+        const providerLng = position.coords.longitude;
+
         try {
-          await fetch(`http://localhost:8080/api/bookings/${bookingId}/tracking`, {
+          // Update provider location
+          const trackingResponse = await fetch(`http://localhost:8080/api/bookings/${bookingId}/tracking`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
+              latitude: providerLat,
+              longitude: providerLng,
             }),
           });
+
+          // Update booking status if needed
+          if (trackingResponse.ok) {
+            const trackingData = await trackingResponse.json();
+            if (trackingData.success && trackingData.data) {
+              bookingStatusRef.current = trackingData.data.status;
+            }
+          }
+
+          // Check if provider is near customer location (within 150 meters)
+          if (
+            customerLocationRef.current &&
+            !hasAutoArrivedRef.current &&
+            bookingStatusRef.current &&
+            (bookingStatusRef.current === 'CONFIRMED' || bookingStatusRef.current === 'IN_PROGRESS')
+          ) {
+            const distance = calculateDistance(
+              providerLat,
+              providerLng,
+              customerLocationRef.current.lat,
+              customerLocationRef.current.lng
+            );
+
+            // Auto-mark as arrived if within 150 meters
+            if (distance <= 150) {
+              hasAutoArrivedRef.current = true;
+              // Automatically mark as arrived
+              await handleMarkArrived(bookingId);
+              // Refresh bookings to show updated status
+              fetchBookings();
+            }
+          }
         } catch (error) {
           // ignore
         }
@@ -715,6 +956,46 @@ const ProviderDashboard: React.FC = () => {
     navigate('/login');
   };
 
+  const handleDeleteClick = (bookingId: string) => {
+    setBookingToDelete(bookingId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!bookingToDelete || !providerId) return;
+    
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/bookings/${bookingToDelete}?userId=${providerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        // Refresh bookings list
+        fetchBookings();
+        setDeleteDialogOpen(false);
+        setBookingToDelete(null);
+      } else {
+        alert(data.message || 'Failed to delete booking');
+      }
+    } catch (error) {
+      alert('Error deleting booking. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setBookingToDelete(null);
+  };
+
   const getKYCStatusColor = () => {
     switch (kycStatus.status) {
       case 'VERIFIED':
@@ -731,279 +1012,272 @@ const ProviderDashboard: React.FC = () => {
 
   const kycStatusInfo = getKYCStatusColor();
 
+  // Filter bookings based on orderFilter
+  const filteredBookings = orderFilter === 'All' 
+    ? bookings 
+    : bookings.filter(b => {
+        if (orderFilter === 'Ongoing') return b.status === 'IN_PROGRESS';
+        if (orderFilter === 'Pending') return b.status === 'PENDING';
+        if (orderFilter === 'Completed') return b.status === 'COMPLETED';
+        if (orderFilter === 'Cancelled') return b.status === 'CANCELLED';
+        return true;
+      });
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* App Bar */}
-      <MuiAppBar position="static" elevation={0} sx={{ bgcolor: '#2563EB', borderBottom: '3px solid #1E40AF' }}>
-        <Toolbar sx={{ py: 1 }}>
-          <Logo size="medium" onClick={() => navigate('/')} />
-          <Typography variant="h6" sx={{ flexGrow: 1, ml: 2, fontWeight: 700, color: 'white' }}>
-            {t('dashboard.provider.title')}
-          </Typography>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header with Logo and Notifications */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Logo size="large" onClick={() => navigate('/')} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Badge badgeContent={unreadCount > 0 ? unreadCount : 0} color="error">
-            <IconButton color="inherit" onClick={handleNotificationClick}>
+            <IconButton onClick={handleNotificationClick}>
               <Notifications />
             </IconButton>
           </Badge>
-          <Popover
-            open={Boolean(notificationAnchorEl)}
-            anchorEl={notificationAnchorEl}
-            onClose={handleNotificationClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            PaperProps={{
-              sx: {
-                width: 400,
-                maxHeight: 500,
-                mt: 1,
-                borderRadius: 3,
-                border: '1px solid',
-                borderColor: 'divider',
-                boxShadow: '0 18px 45px rgba(15, 23, 42, 0.16)',
-              },
-            }}
-          >
-            <Box sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {t('dashboard.notifications.title') || 'Notifications'}
-                </Typography>
-                {unreadCount > 0 && (
-                  <Button size="small" onClick={handleMarkAllAsRead}>
-                    {t('dashboard.notifications.markAllRead') || 'Mark all read'}
-                  </Button>
-                )}
-              </Box>
-              <Divider sx={{ mb: 1 }} />
-              {notificationsLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <CircularProgress size={24} />
-                </Box>
-              ) : notifications.length === 0 ? (
-                <Box sx={{ textAlign: 'center', p: 3 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('dashboard.notifications.noNotifications') || 'No notifications'}
-                  </Typography>
-                </Box>
-              ) : (
-                <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-                  {notifications.map((notification) => (
-                    <React.Fragment key={notification.id}>
-                      <ListItem
-                        button
-                        onClick={() => handleNotificationItemClick(notification)}
-                        sx={{
-                          bgcolor: notification.isRead ? 'transparent' : '#e3f2fd',
-                          borderRadius: 1,
-                          mb: 0.5,
-                          '&:hover': {
-                            bgcolor: notification.isRead ? '#f5f5f5' : '#bbdefb',
-                          },
-                        }}
-                      >
-                        <ListItemIcon>
-                          {notification.type === 'BOOKING' && <Assignment />}
-                          {notification.type === 'KYC' && <Security />}
-                          {notification.type === 'PAYMENT' && <AccountBalanceWallet />}
-                          {notification.type === 'REVIEW' && <Star />}
-                          {notification.type === 'SYSTEM' && <Notifications />}
-                          {!notification.type && <Info />}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: notification.isRead ? 400 : 700,
-                                color: notification.priority === 'URGENT' ? '#d32f2f' : 'inherit',
-                              }}
-                            >
-                              {notification.title}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                {notification.message}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {new Date(notification.createdAt).toLocaleString(language === 'hi' ? 'hi-IN' : 'en-IN', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                        {!notification.isRead && (
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              bgcolor: '#3B82F6',
-                              ml: 1,
-                            }}
-                          />
-                        )}
-                      </ListItem>
-                      <Divider />
-                    </React.Fragment>
-                  ))}
-                </List>
-              )}
-            </Box>
-          </Popover>
-          <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
-            <Avatar sx={{ bgcolor: '#2563EB', width: 36, height: 36, border: '2px solid white' }}>
+          <IconButton onClick={handleMenuOpen}>
+            <Avatar sx={{ bgcolor: '#3B82F6' }}>
               {user?.name?.charAt(0).toUpperCase() || 'P'}
             </Avatar>
           </IconButton>
-          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-            <MenuItem onClick={() => navigate('/profile')}>
-              <Person sx={{ mr: 1 }} /> Profile
-            </MenuItem>
-            <MenuItem onClick={() => navigate('/provider/upload-service')}>
-              <Add sx={{ mr: 1 }} /> Add Service
-            </MenuItem>
-            <MenuItem onClick={handleLogout}>
-              <Logout sx={{ mr: 1 }} /> Logout
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </MuiAppBar>
+        </Box>
+      </Box>
 
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        <Card
-          sx={{
-            mb: 3,
-            p: { xs: 3, md: 4 },
-            color: '#fff',
-            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 40%, #2563EB 100%)',
-          }}
-        >
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={7}>
-              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-                Hi{user?.name ? `, ${user.name}` : ''}! Ready to accept bookings?
-              </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Manage services, track bookings, and keep your availability updated.
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={5} sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' }, flexWrap: 'wrap' }}>
-              <Button variant="contained" color="secondary" onClick={() => navigate('/provider/upload-service')} sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}>
-                Add Service
+      {/* Notification Popover */}
+      <Popover
+        open={Boolean(notificationAnchorEl)}
+        anchorEl={notificationAnchorEl}
+        onClose={handleNotificationClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <Box sx={{ p: 2, width: 400, maxHeight: 500 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {t('dashboard.notifications.title') || 'Notifications'}
+            </Typography>
+            {unreadCount > 0 && (
+              <Button size="small" onClick={handleMarkAllAsRead}>
+                {t('dashboard.notifications.markAllRead') || 'Mark all read'}
               </Button>
-              <Button variant="outlined" onClick={() => navigate('/support')} sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff' } }}>
-                Get Help
-              </Button>
-            </Grid>
-          </Grid>
-        </Card>
-        {/* KYC Status Banner - Prominent Display */}
-        {!kycLoading && (
-          <Alert
-            severity={
-              kycStatus.status === 'VERIFIED' ? 'success' :
-              (kycStatus.status === 'PENDING' || kycStatus.status === 'UNDER_REVIEW') ? 'warning' :
-              kycStatus.status === 'REJECTED' ? 'error' : 'info'
-            }
-            icon={kycStatusInfo.icon}
-            sx={{
-              mb: 3,
-              borderRadius: 2,
-              fontSize: '1rem',
-              fontWeight: 600,
-              '& .MuiAlert-message': {
-                width: '100%',
-              },
-            }}
-            action={
-              kycStatus.status === 'VERIFIED' ? (
-                <Chip
-                  icon={<CheckCircle />}
-                  label={t('dashboard.kyc.complete')}
-                  color="success"
-                  sx={{ fontWeight: 600 }}
-                />
-              ) : kycStatus.status === 'REJECTED' ? (
-                <Button
-                  color="inherit"
-                  size="small"
-                  variant="contained"
-                  onClick={() => navigate('/kyc')}
-                  sx={{ 
-                    fontWeight: 600,
-                    bgcolor: '#dc3545',
-                    '&:hover': { bgcolor: '#c82333' },
-                  }}
-                >
-                  {t('dashboard.kyc.reUpload')}
-                </Button>
-              ) : (
-                <Button
-                  color="inherit"
-                  size="small"
-                  variant="outlined"
-                  onClick={() => navigate('/kyc')}
-                  sx={{ fontWeight: 600 }}
-                >
-                  {kycStatus.status === null ? t('dashboard.kyc.submit') : t('dashboard.kyc.viewStatus')}
-                </Button>
-              )
-            }
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  {t('dashboard.kyc.status')}: {kycStatusInfo.text}
-                </Typography>
-                {kycStatus.status === 'VERIFIED' && kycStatus.verifiedAt && (
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                    ✅ {t('dashboard.kyc.verifiedOn')} {new Date(kycStatus.verifiedAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </Typography>
-                )}
-                {(kycStatus.status === 'PENDING' || kycStatus.status === 'UNDER_REVIEW') && (
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                    ⏳ {t('dashboard.kyc.underProcessMsg')}
-                  </Typography>
-                )}
-                {kycStatus.status === 'REJECTED' && (
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
-                      ❌ {t('dashboard.kyc.rejectedMsg')}
-                    </Typography>
-                    {kycStatus.rejectionReason && (
-                      <Typography variant="body2" sx={{ opacity: 0.7, fontStyle: 'italic' }}>
-                        {kycStatus.rejectionReason}
-                      </Typography>
+            )}
+          </Box>
+          <Divider sx={{ mb: 1 }} />
+          {notificationsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : notifications.length === 0 ? (
+            <Box sx={{ textAlign: 'center', p: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('dashboard.notifications.noNotifications') || 'No notifications'}
+              </Typography>
+            </Box>
+          ) : (
+            <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+              {notifications.map((notification) => (
+                <React.Fragment key={notification.id}>
+                  <ListItem
+                    button
+                    onClick={() => handleNotificationItemClick(notification)}
+                    sx={{
+                      bgcolor: notification.isRead ? 'transparent' : '#e3f2fd',
+                      borderRadius: 1,
+                      mb: 0.5,
+                      '&:hover': {
+                        bgcolor: notification.isRead ? '#f5f5f5' : '#bbdefb',
+                      },
+                    }}
+                  >
+                    <ListItemIcon>
+                      {notification.type === 'BOOKING' && <Assignment />}
+                      {notification.type === 'KYC' && <Security />}
+                      {notification.type === 'PAYMENT' && <AccountBalanceWallet />}
+                      {notification.type === 'REVIEW' && <Star />}
+                      {notification.type === 'SYSTEM' && <Notifications />}
+                      {!notification.type && <Info />}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            fontWeight: notification.isRead ? 400 : 700,
+                            color: notification.priority === 'URGENT' ? '#d32f2f' : 'inherit',
+                          }}
+                        >
+                          {notification.title}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            {notification.message}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(notification.createdAt).toLocaleString(language === 'hi' ? 'hi-IN' : 'en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    {!notification.isRead && (
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: '#3B82F6',
+                          ml: 1,
+                        }}
+                      />
                     )}
-                    <Typography variant="body2" sx={{ opacity: 0.8, mt: 1, fontWeight: 600 }}>
-                      🔄 {t('dashboard.kyc.reUploadMsg')}
-                    </Typography>
-                  </Box>
-                )}
-                {kycStatus.status === null && (
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                    📋 {t('dashboard.kyc.notSubmittedMsg')}
+                  </ListItem>
+                  <Divider />
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </Box>
+      </Popover>
+
+      {/* User Menu */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+        <MenuItem onClick={() => navigate('/profile')}>
+          <Person sx={{ mr: 1 }} /> Profile
+        </MenuItem>
+        <MenuItem onClick={() => navigate('/provider/upload-service')}>
+          <Add sx={{ mr: 1 }} /> Add Service
+        </MenuItem>
+        <MenuItem onClick={handleLogout}>
+          <Logout sx={{ mr: 1 }} /> Logout
+        </MenuItem>
+      </Menu>
+
+      {/* Welcome Banner */}
+      <Card
+        sx={{
+          mb: 3,
+          p: 3,
+          color: '#fff',
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 40%, #2563EB 100%)',
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={7}>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              Hi{user?.name ? `, ${user.name}` : ''}! Ready to accept bookings?
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              Manage services, track bookings, and keep your availability updated.
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={5} sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+            <Button 
+              variant="contained" 
+              onClick={() => navigate('/provider/upload-service')} 
+              sx={{ bgcolor: '#F97316', '&:hover': { bgcolor: '#EA580C' } }}
+            >
+              Add Service
+            </Button>
+            <Button 
+              variant="outlined" 
+              onClick={() => navigate('/support')} 
+              sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)', '&:hover': { borderColor: '#fff' } }}
+            >
+              Get Help
+            </Button>
+          </Grid>
+        </Grid>
+      </Card>
+
+      {/* KYC Status Banner */}
+      {!kycLoading && (
+        <Alert
+          severity={
+            kycStatus.status === 'VERIFIED' ? 'success' :
+            (kycStatus.status === 'PENDING' || kycStatus.status === 'UNDER_REVIEW') ? 'warning' :
+            kycStatus.status === 'REJECTED' ? 'error' : 'info'
+          }
+          icon={kycStatusInfo.icon}
+          sx={{ mb: 3 }}
+          action={
+            kycStatus.status === 'VERIFIED' ? (
+              <Chip
+                icon={<CheckCircle />}
+                label={t('dashboard.kyc.complete')}
+                color="success"
+                size="small"
+              />
+            ) : kycStatus.status === 'REJECTED' ? (
+              <Button
+                color="inherit"
+                size="small"
+                variant="contained"
+                onClick={() => navigate('/kyc')}
+                sx={{ bgcolor: '#dc3545', '&:hover': { bgcolor: '#c82333' } }}
+              >
+                {t('dashboard.kyc.reUpload')}
+              </Button>
+            ) : (
+              <Button
+                color="inherit"
+                size="small"
+                variant="outlined"
+                onClick={() => navigate('/kyc')}
+              >
+                {kycStatus.status === null ? t('dashboard.kyc.submit') : t('dashboard.kyc.viewStatus')}
+              </Button>
+            )
+          }
+        >
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+              {t('dashboard.kyc.status')}: {kycStatusInfo.text}
+            </Typography>
+            {kycStatus.status === 'VERIFIED' && kycStatus.verifiedAt && (
+              <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                ✅ {t('dashboard.kyc.verifiedOn')} {new Date(kycStatus.verifiedAt).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </Typography>
+            )}
+            {(kycStatus.status === 'PENDING' || kycStatus.status === 'UNDER_REVIEW') && (
+              <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                ⏳ {t('dashboard.kyc.underProcessMsg')}
+              </Typography>
+            )}
+            {kycStatus.status === 'REJECTED' && (
+              <Box>
+                <Typography variant="caption" sx={{ opacity: 0.8, mb: 0.5, display: 'block' }}>
+                  ❌ {t('dashboard.kyc.rejectedMsg')}
+                </Typography>
+                {kycStatus.rejectionReason && (
+                  <Typography variant="caption" sx={{ opacity: 0.7, fontStyle: 'italic', display: 'block' }}>
+                    {kycStatus.rejectionReason}
                   </Typography>
                 )}
               </Box>
-            </Box>
-          </Alert>
-        )}
+            )}
+            {kycStatus.status === null && (
+              <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                📋 {t('dashboard.kyc.notSubmittedMsg')}
+              </Typography>
+            )}
+          </Box>
+        </Alert>
+      )}
 
-        {/* Stats Cards - Enhanced Design */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Stats Cards - Only show in Overview */}
+      {tabValue === 0 && (
+        <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card
               elevation={3}
@@ -1183,42 +1457,34 @@ const ProviderDashboard: React.FC = () => {
             </Card>
           </Grid>
         </Grid>
+      )}
 
-        {/* Tabs - Enhanced Design */}
-        <Paper elevation={2} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
-              bgcolor: '#fff',
-              '& .MuiTab-root': {
-                fontWeight: 600,
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                minHeight: 64,
-              },
-              '& .Mui-selected': {
-                color: '#3B82F6',
-              },
-            }}
-            indicatorColor="primary"
-            textColor="primary"
-          >
-            <Tab icon={<Dashboard />} label={t('dashboard.tabs.overview')} iconPosition="start" />
-            <Tab icon={<Assignment />} label={t('dashboard.tabs.bookings')} iconPosition="start" />
-            <Tab icon={<AccountBalanceWallet />} label={t('dashboard.tabs.earnings')} iconPosition="start" />
-            <Tab icon={<BusinessCenter />} label={t('dashboard.tabs.services')} iconPosition="start" />
-          </Tabs>
+      {/* Tabs */}
+      <Paper elevation={2} sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+          }}
+        >
+          <Tab icon={<Dashboard />} iconPosition="start" label={t('dashboard.tabs.overview')} />
+          <Tab icon={<Assignment />} iconPosition="start" label={t('dashboard.tabs.bookings')} />
+          <Tab icon={<AccountBalanceWallet />} iconPosition="start" label={t('dashboard.tabs.earnings')} />
+          <Tab icon={<BusinessCenter />} iconPosition="start" label={t('dashboard.tabs.services')} />
+          <Tab icon={<Star />} iconPosition="start" label="Reviews" />
+        </Tabs>
+      </Paper>
 
-          {/* Overview Tab */}
-          <TabPanel value={tabValue} index={0}>
-            <Grid container spacing={3}>
+      {/* Tab Panels */}
+      <Paper elevation={2}>
+        <TabPanel value={tabValue} index={0}>
+          <Grid container spacing={3}>
               <Grid item xs={12} md={8}>
                 <Card elevation={2} sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <CardContent sx={{ p: 1.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                       <Typography variant="h6" sx={{ fontWeight: 700, color: '#333' }}>
                         हाल की बुकिंग | Recent Bookings
                       </Typography>
@@ -1387,18 +1653,17 @@ const ProviderDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-            </Grid>
-          </TabPanel>
+          </Grid>
+        </TabPanel>
 
-          {/* Bookings Tab */}
-          <TabPanel value={tabValue} index={1}>
-            <Card elevation={2} sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#333' }}>
-                      {t('dashboard.allBookings')}
-                    </Typography>
-                    <Chip label={`${stats.pendingBookings} ${t('dashboard.pending')}`} color="warning" sx={{ fontWeight: 600 }} />
+        <TabPanel value={tabValue} index={1}>
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#333' }}>
+                    {t('dashboard.allBookings')}
+                  </Typography>
+                  <Chip label={`${stats.pendingBookings} ${t('dashboard.pending')}`} color="warning" size="small" sx={{ fontWeight: 600 }} />
                 </Box>
                 <TableContainer>
                   <Table>
@@ -1410,18 +1675,19 @@ const ProviderDashboard: React.FC = () => {
                         <TableCell sx={{ fontWeight: 700 }}>{t('dashboard.amount')}</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>{t('dashboard.status')}</TableCell>
                         <TableCell sx={{ fontWeight: 700 }}>{t('dashboard.actions')}</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Delete</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {bookingsLoading ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={7} align="center">
                             <CircularProgress />
                           </TableCell>
                         </TableRow>
                       ) : bookings.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} align="center">
+                          <TableCell colSpan={7} align="center">
                             <Typography variant="body2" color="text.secondary">
                               {language === 'hi' ? 'कोई बुकिंग नहीं मिली' : 'No bookings found'}
                             </Typography>
@@ -1464,75 +1730,166 @@ const ProviderDashboard: React.FC = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              <Button 
-                                size="small" 
-                                variant="outlined" 
-                                sx={{ fontWeight: 600, mr: 1 }}
-                                onClick={() => navigate(`/booking/${booking.id}`)}
-                              >
-                                {t('dashboard.view')}
-                              </Button>
-                              {booking.status === 'PENDING' && (
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  onClick={() => handleConfirmBooking(booking.id)}
-                                  sx={{ fontWeight: 600, mr: 1 }}
-                                >
-                                  Confirm
-                                </Button>
-                              )}
-                              {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && (
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<MyLocation />}
-                                  onClick={() => handleShareLiveLocation(booking.id)}
-                                  disabled={locationUpdatingId === booking.id || liveTrackingBookingId === booking.id}
-                                  sx={{ fontWeight: 600, mr: 1 }}
-                                >
-                                  {locationUpdatingId === booking.id ? 'Sharing...' : 'Share Live'}
-                                </Button>
-                              )}
-                              {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && (
-                                <Button
-                                  size="small"
-                                  variant={liveTrackingBookingId === booking.id ? 'contained' : 'outlined'}
-                                  color={liveTrackingBookingId === booking.id ? 'success' : 'primary'}
-                                  startIcon={<MyLocation />}
-                                  onClick={() =>
-                                    liveTrackingBookingId === booking.id
-                                      ? stopLiveTracking()
-                                      : startLiveTracking(booking.id)
-                                  }
-                                  sx={{ fontWeight: 600, mr: 1 }}
-                                >
-                                  {liveTrackingBookingId === booking.id ? 'Stop Live' : 'Auto Live'}
-                                </Button>
-                              )}
-                              {booking.status === 'IN_PROGRESS' && (
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  color="success"
-                                  onClick={() => handleMarkArrived(booking.id)}
-                                  disabled={arriveUpdatingId === booking.id}
-                                  sx={{ fontWeight: 600, mr: 1 }}
-                                >
-                                  {arriveUpdatingId === booking.id ? 'Arriving...' : 'Arrived'}
-                                </Button>
-                              )}
-                              {booking.address && (
-                                <Button
-                                  size="small"
-                                  variant="text"
-                                  onClick={() => {
-                                    const destination = encodeURIComponent(`${booking.address}${booking.city ? `, ${booking.city}` : ''}`);
-                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                                <Button 
+                                  size="small" 
+                                  variant="outlined" 
+                                  sx={{ 
+                                    fontWeight: 600,
+                                    minWidth: 80,
+                                    textTransform: 'none',
+                                    height: 32
                                   }}
+                                  onClick={() => navigate(`/booking/${booking.id}`)}
                                 >
-                                  Directions
+                                  {t('dashboard.view')}
                                 </Button>
+                                
+                                {booking.status === 'PENDING' && (
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => handleConfirmBooking(booking.id)}
+                                    sx={{ 
+                                      fontWeight: 600,
+                                      minWidth: 100,
+                                      textTransform: 'none',
+                                      height: 32
+                                    }}
+                                  >
+                                    Confirm
+                                  </Button>
+                                )}
+                                
+                                {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && (
+                                  <Button
+                                    size="small"
+                                    variant={liveTrackingBookingId === booking.id ? 'contained' : 'outlined'}
+                                    color={liveTrackingBookingId === booking.id ? 'success' : 'primary'}
+                                    startIcon={<MyLocation />}
+                                    onClick={() =>
+                                      liveTrackingBookingId === booking.id
+                                        ? stopLiveTracking()
+                                        : startLiveTracking(booking.id)
+                                    }
+                                    sx={{ 
+                                      fontWeight: 600,
+                                      minWidth: 110,
+                                      textTransform: 'none',
+                                      height: 32
+                                    }}
+                                  >
+                                    {liveTrackingBookingId === booking.id ? 'Stop Live' : 'Auto Live'}
+                                  </Button>
+                                )}
+                                
+                                {booking.status === 'IN_PROGRESS' && (
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="info"
+                                    onClick={() => handleMarkArrived(booking.id)}
+                                    disabled={arriveUpdatingId === booking.id}
+                                    sx={{ 
+                                      fontWeight: 600,
+                                      minWidth: 100,
+                                      textTransform: 'none',
+                                      height: 32
+                                    }}
+                                  >
+                                    {arriveUpdatingId === booking.id ? 'Arriving...' : 'Arrived'}
+                                  </Button>
+                                )}
+                                
+                                {/* Complete Service Button */}
+                                {(booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS') && 
+                                  booking.status !== 'COMPLETED' && (
+                                  <Tooltip title="Mark service as completed">
+                                    <span>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        color="success"
+                                        startIcon={completingBookingId === booking.id ? <CircularProgress size={16} color="inherit" /> : <Done />}
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (e.nativeEvent) {
+                                            e.nativeEvent.stopImmediatePropagation();
+                                          }
+                                          if (booking.id && completingBookingId !== booking.id) {
+                                            handleCompleteServiceClick(booking.id);
+                                          }
+                                        }}
+                                        disabled={completingBookingId === booking.id || booking.status === 'COMPLETED' || !booking.id}
+                                        sx={{ 
+                                          fontWeight: 600,
+                                          minWidth: 140,
+                                          textTransform: 'none',
+                                          height: 32,
+                                          bgcolor: '#10B981',
+                                          cursor: 'pointer',
+                                          pointerEvents: 'auto',
+                                          '&:hover': { 
+                                            bgcolor: '#059669',
+                                            transform: 'translateY(-1px)',
+                                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
+                                          },
+                                          '&:disabled': { 
+                                            bgcolor: '#9CA3AF',
+                                            cursor: 'not-allowed',
+                                            pointerEvents: 'none'
+                                          },
+                                          transition: 'all 0.2s ease',
+                                          position: 'relative',
+                                          zIndex: 10
+                                        }}
+                                      >
+                                        {completingBookingId === booking.id ? 'Completing...' : 'Complete Service'}
+                                      </Button>
+                                    </span>
+                                  </Tooltip>
+                                )}
+                                
+                                {/* Directions Button - Always in same row */}
+                                {booking.address && (
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<LocationOn />}
+                                    onClick={() => {
+                                      const destination = encodeURIComponent(`${booking.address}${booking.city ? `, ${booking.city}` : ''}`);
+                                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
+                                    }}
+                                    sx={{ 
+                                      textTransform: 'none',
+                                      height: 32,
+                                      minWidth: 110,
+                                      borderColor: '#3B82F6',
+                                      color: '#3B82F6',
+                                      '&:hover': {
+                                        bgcolor: 'rgba(59, 130, 246, 0.08)',
+                                        borderColor: '#2563EB'
+                                      }
+                                    }}
+                                  >
+                                    Directions
+                                  </Button>
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              {(booking.status === 'CANCELLED' || booking.status === 'COMPLETED') && (
+                                <Tooltip title="Delete Booking">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleDeleteClick(booking.id)}
+                                  >
+                                    <Delete fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
                               )}
                             </TableCell>
                           </TableRow>
@@ -1540,14 +1897,13 @@ const ProviderDashboard: React.FC = () => {
                       )}
                     </TableBody>
                   </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
-          </TabPanel>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </TabPanel>
 
-          {/* Earnings Tab */}
-          <TabPanel value={tabValue} index={2}>
-            <Grid container spacing={3}>
+        <TabPanel value={tabValue} index={2}>
+          <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Card elevation={2} sx={{ borderRadius: 2 }}>
                   <CardContent>
@@ -1565,11 +1921,11 @@ const ProviderDashboard: React.FC = () => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <Card elevation={2} sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333' }}>
+                  <CardContent sx={{ p: 1.5 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 0.5 }}>
                       {t('dashboard.stats.thisMonth')}
                     </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#667eea', mb: 1 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#667eea', mb: 0.5 }}>
                       ₹{stats.thisMonthEarnings.toLocaleString()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -1580,11 +1936,11 @@ const ProviderDashboard: React.FC = () => {
               </Grid>
               <Grid item xs={12} md={6}>
                 <Card elevation={2} sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333' }}>
+                  <CardContent sx={{ p: 1.5 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 0.5 }}>
                       Wallet Balance
                     </Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 700, color: '#2563EB', mb: 1 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#2563EB', mb: 0.5 }}>
                       ₹{walletBalance.toLocaleString()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -1684,8 +2040,8 @@ const ProviderDashboard: React.FC = () => {
               </Grid>
               <Grid item xs={12}>
                 <Card elevation={2} sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 2 }}>
+                  <CardContent sx={{ p: 1.5 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 1 }}>
                       Withdrawal Requests
                     </Typography>
                     {withdrawLoading ? (
@@ -1729,8 +2085,8 @@ const ProviderDashboard: React.FC = () => {
               </Grid>
               <Grid item xs={12}>
                 <Card elevation={2} sx={{ borderRadius: 2 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 2 }}>
+                  <CardContent sx={{ p: 1.5 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#333', mb: 1 }}>
                       {t('dashboard.earningsHistory')}
                     </Typography>
                     <TableContainer>
@@ -1758,27 +2114,27 @@ const ProviderDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </Grid>
-            </Grid>
-          </TabPanel>
+          </Grid>
+        </TabPanel>
 
-          {/* My Services Tab */}
-          <TabPanel value={tabValue} index={3}>
-            <Card elevation={2} sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <TabPanel value={tabValue} index={3}>
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#333' }}>
                     {t('dashboard.myServices')}
                   </Typography>
                   <Button
                     variant="contained"
+                    size="small"
                     startIcon={<Add />}
                     onClick={() => navigate('/provider/upload-service')}
-                    sx={{ bgcolor: '#FF6B35', fontWeight: 600, borderRadius: 2 }}
+                    sx={{ bgcolor: '#FF6B35', fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
                   >
                     {t('dashboard.addService')}
                   </Button>
                 </Box>
-                <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+                <Alert severity="info" sx={{ mb: 2, borderRadius: 2, fontSize: '0.875rem' }}>
                   {t('dashboard.servicesMsg')}
                 </Alert>
                 {servicesLoading ? (
@@ -1873,15 +2229,208 @@ const ProviderDashboard: React.FC = () => {
                         </Card>
                       </Grid>
                     ))}
-                  </Grid>
+              </Grid>
+            )}
+            </CardContent>
+          </Card>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={4}>
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#333' }}>
+                      Customer Reviews
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Total {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'} • Average Rating: {stats.averageRating.toFixed(1)} ⭐
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={`${reviews.length} Reviews`} 
+                    color="primary" 
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+
+                {reviewsLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : reviews.length === 0 ? (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    No reviews yet. Complete services to receive customer reviews.
+                  </Alert>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {reviews.map((review: any) => (
+                      <Card 
+                        key={review.id} 
+                        variant="outlined" 
+                        sx={{ 
+                          borderRadius: 2,
+                          '&:hover': {
+                            boxShadow: 2,
+                            borderColor: '#3B82F6'
+                          }
+                        }}
+                      >
+                        <CardContent>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar sx={{ bgcolor: '#3B82F6', width: 48, height: 48 }}>
+                                {(review.customerName || 'C').charAt(0).toUpperCase()}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                  {review.customerName || 'Anonymous Customer'}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {review.service || 'Service'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Star sx={{ color: '#FFB800', fontSize: 20 }} />
+                                <Typography variant="h6" sx={{ fontWeight: 700, color: '#FFB800' }}>
+                                  {review.rating}
+                                </Typography>
+                              </Box>
+                              <Typography variant="caption" color="text.secondary">
+                                {review.createdAt 
+                                  ? new Date(review.createdAt).toLocaleDateString('en-IN', { 
+                                      year: 'numeric', 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    })
+                                  : 'N/A'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          
+                          {review.comment && (
+                            <Typography 
+                              variant="body2" 
+                              sx={{ 
+                                color: '#555',
+                                lineHeight: 1.6,
+                                pl: 7
+                              }}
+                            >
+                              "{review.comment}"
+                            </Typography>
+                          )}
+                          
+                          {review.providerResponse && (
+                            <Box 
+                              sx={{ 
+                                mt: 2, 
+                                p: 2, 
+                                bgcolor: '#F3F4F6', 
+                                borderRadius: 1,
+                                borderLeft: '3px solid #3B82F6'
+                              }}
+                            >
+                              <Typography variant="caption" sx={{ fontWeight: 600, color: '#3B82F6', display: 'block', mb: 0.5 }}>
+                                Your Response:
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {review.providerResponse}
+                              </Typography>
+                            </Box>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Box>
                 )}
-              </CardContent>
-            </Card>
-          </TabPanel>
-        </Paper>
-      </Container>
+            </CardContent>
+          </Card>
+        </TabPanel>
+      </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ fontWeight: 700, color: '#DC2626' }}>
+          Delete Booking
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this booking? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={deleting}
+            startIcon={deleting ? <CircularProgress size={20} /> : <Delete />}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Complete Service Confirmation Dialog */}
+      <Dialog
+        open={completeDialogOpen}
+        onClose={handleCompleteCancel}
+        aria-labelledby="complete-dialog-title"
+        aria-describedby="complete-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="complete-dialog-title" sx={{ fontWeight: 700, color: '#10B981', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Done sx={{ fontSize: 24 }} />
+          Complete Service
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="complete-dialog-description" sx={{ fontSize: '1rem', mt: 1 }}>
+            Are you sure the service is completed and payment has been received? 
+            <br /><br />
+            This will:
+            <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+              <li>Mark the booking as <strong>COMPLETED</strong></li>
+              <li>Notify the customer to rate the service</li>
+              <li>Update your earnings and stats</li>
+            </ul>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button 
+            onClick={handleCompleteCancel} 
+            disabled={completingBookingId !== null}
+            variant="outlined"
+            sx={{ minWidth: 100 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCompleteService}
+            color="success"
+            variant="contained"
+            disabled={completingBookingId !== null}
+            startIcon={completingBookingId ? <CircularProgress size={20} /> : <Done />}
+            sx={{ minWidth: 150, fontWeight: 600 }}
+          >
+            {completingBookingId ? 'Completing...' : 'Complete Service'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <SupportChatFloatingWidget userId={providerId || ''} userRole="PROVIDER" userName={user?.name || provider?.name || 'Provider'} />
-    </Box>
+    </Container>
   );
 };
 

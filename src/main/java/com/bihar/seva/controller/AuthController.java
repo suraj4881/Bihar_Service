@@ -77,10 +77,35 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse<Boolean>> forgotPassword(@RequestParam String email) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> forgotPassword(@RequestParam String email) {
         try {
-            boolean sent = authService.forgotPassword(email);
-            return ResponseEntity.ok(ApiResponse.success(sent, "Password reset email sent"));
+            Map<String, Object> response = authService.forgotPassword(email);
+            return ResponseEntity.ok(ApiResponse.success(response, "Password reset OTP sent to email"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-password-reset-otp")
+    public ResponseEntity<ApiResponse<Boolean>> verifyPasswordResetOTP(
+            @RequestParam String email,
+            @RequestParam String otp) {
+        try {
+            boolean verified = authService.verifyPasswordResetOTP(email, otp);
+            return ResponseEntity.ok(ApiResponse.success(verified, "OTP verified successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/reset-password-otp")
+    public ResponseEntity<ApiResponse<Boolean>> resetPasswordWithOTP(
+            @RequestParam String email,
+            @RequestParam String otp,
+            @RequestParam String password) {
+        try {
+            boolean reset = authService.resetPasswordWithOTP(email, otp, password);
+            return ResponseEntity.ok(ApiResponse.success(reset, "Password reset successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

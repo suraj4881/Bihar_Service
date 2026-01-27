@@ -2,10 +2,10 @@ package com.bihar.seva.controller;
 
 import com.bihar.seva.dto.ApiResponse;
 import com.bihar.seva.model.Payment;
+import com.bihar.seva.dto.RazorpayVerifyRequest;
 import com.bihar.seva.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +24,7 @@ import java.util.Map;
 public class PaymentController {
     
     private final PaymentService paymentService;
-
-    @Value("${razorpay.key.id:}")
-    private String razorpayKeyId;
+    
     
     /**
      * Calculate payment amount (with commission)
@@ -65,6 +63,74 @@ public class PaymentController {
             log.error("Error processing payment: {}", e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body(ApiResponse.error("Failed to process payment: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/razorpay/order")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createRazorpayOrder(@RequestBody Map<String, Object> request) {
+        try {
+            String bookingId = request.get("bookingId").toString();
+            Map<String, Object> order = paymentService.createRazorpayOrder(bookingId);
+            return ResponseEntity.ok(ApiResponse.success(order, "Order created"));
+        } catch (Exception e) {
+            log.error("Error creating Razorpay order: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Failed to create order: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/razorpay/verify")
+    public ResponseEntity<ApiResponse<Payment>> verifyRazorpay(@RequestBody RazorpayVerifyRequest request) {
+        try {
+            boolean valid = paymentService.verifyRazorpayPaymentSignature(
+                request.getRazorpayOrderId(),
+                request.getRazorpayPaymentId(),
+                request.getRazorpaySignature()
+            );
+            if (!valid) {
+                return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid Razorpay signature"));
+            }
+            Payment payment = paymentService.processPayment(
+                request.getBookingId(),
+                "RAZORPAY",
+                request.getRazorpayPaymentId()
+            );
+            return ResponseEntity.ok(ApiResponse.success(payment, "Payment verified"));
+        } catch (Exception e) {
+            log.error("Error verifying Razorpay payment", e);
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Verification failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/razorpay/recheck")
+    public ResponseEntity<ApiResponse<Payment>> recheckRazorpayPayment(@RequestBody Map<String, Object> request) {
+        try {
+            String bookingId = request.get("bookingId").toString();
+            Payment payment = paymentService.reconcileRazorpayPayment(bookingId);
+            return ResponseEntity.ok(ApiResponse.success(payment, "Payment captured and confirmed"));
+        } catch (Exception e) {
+            log.error("Error rechecking Razorpay payment", e);
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Recheck failed: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/razorpay/webhook")
+    public ResponseEntity<ApiResponse<String>> razorpayWebhook(
+        @RequestBody String payload,
+        @RequestHeader("X-Razorpay-Signature") String signature) {
+        try {
+            boolean valid = paymentService.verifyRazorpayWebhook(payload, signature);
+            if (!valid) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Invalid webhook signature"));
+            }
+            paymentService.handleRazorpayWebhook(payload);
+            return ResponseEntity.ok(ApiResponse.success("OK", "Webhook processed"));
+        } catch (Exception e) {
+            log.error("Webhook processing failed", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error("Webhook failed: " + e.getMessage()));
         }
     }
     
@@ -120,106 +186,4 @@ public class PaymentController {
         }
     }
 
-    /**
-     * Razorpay webhook endpoint
-     */
-    @PostMapping("/razorpay/webhook")
-    public ResponseEntity<ApiResponse<String>> handleRazorpayWebhook(
-            @RequestBody String payload,
-            @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature) {
-        try {
-            boolean verified = paymentService.verifyRazorpayWebhook(payload, signature);
-            if (!verified) {
-                return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Invalid Razorpay webhook signature"));
-            }
-            log.info("Razorpay webhook received: {}", payload);
-            return ResponseEntity.ok(ApiResponse.success("OK", "Webhook processed"));
-        } catch (Exception e) {
-            log.error("Error handling Razorpay webhook: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Failed to process webhook: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Create Razorpay order for a booking
-     */
-    @PostMapping("/razorpay/order")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> createRazorpayOrder(
-            @RequestBody Map<String, String> request) {
-        try {
-            String bookingId = request.get("bookingId");
-            if (bookingId == null || bookingId.isBlank()) {
-                return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("bookingId is required"));
-            }
-            Map<String, Object> order = paymentService.createRazorpayOrder(bookingId);
-            return ResponseEntity.ok(ApiResponse.success(order, "Razorpay order created"));
-        } catch (Exception e) {
-            log.error("Error creating Razorpay order: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Failed to create order: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Razorpay key for frontend
-     */
-    @GetMapping("/razorpay/key")
-    public ResponseEntity<ApiResponse<Map<String, String>>> getRazorpayKey() {
-        return ResponseEntity.ok(ApiResponse.success(
-            Map.of("keyId", razorpayKeyId),
-            "Razorpay key retrieved"
-        ));
-    }
-
-    /**
-     * Razorpay payment verification
-     */
-    @PostMapping("/razorpay/verify")
-    public ResponseEntity<ApiResponse<Payment>> verifyRazorpayPayment(
-            @RequestBody Map<String, String> request) {
-        try {
-            String bookingId = request.get("bookingId");
-            String orderId = request.get("orderId");
-            String paymentId = request.get("paymentId");
-            String signature = request.get("signature");
-            String paymentMethod = request.getOrDefault("paymentMethod", "RAZORPAY");
-
-            if (bookingId == null || bookingId.isBlank()) {
-                return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("bookingId is required"));
-            }
-
-            boolean verified = paymentService.verifyRazorpayPaymentSignature(orderId, paymentId, signature);
-            if (!verified) {
-                return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Invalid Razorpay payment signature"));
-            }
-
-            Payment payment = paymentService.processPayment(bookingId, paymentMethod, paymentId);
-            return ResponseEntity.ok(ApiResponse.success(payment, "Payment verified and processed"));
-        } catch (Exception e) {
-            log.error("Error verifying Razorpay payment: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Failed to verify payment: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Razorpay callback/return endpoint
-     */
-    @GetMapping("/razorpay/callback")
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleRazorpayCallback(
-            @RequestParam Map<String, String> params) {
-        try {
-            log.info("Razorpay callback received: {}", params);
-            return ResponseEntity.ok(ApiResponse.success(params, "Callback received"));
-        } catch (Exception e) {
-            log.error("Error handling Razorpay callback: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Failed to process callback: " + e.getMessage()));
-        }
-    }
 }

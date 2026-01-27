@@ -128,11 +128,17 @@ const HomePage: React.FC = () => {
                 <Typography
                   variant="overline"
                   sx={{
-                    color: alpha('#60A5FA', 0.9),
+                    color: '#FFFFFF',
                     fontWeight: 700,
                     fontSize: '0.9rem',
                     letterSpacing: '2px',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                    bgcolor: 'rgba(96, 165, 250, 0.2)',
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 1,
+                    display: 'inline-block',
+                    mb: 1,
                   }}
                 >
                   {t('hero.tagline')}
@@ -158,8 +164,8 @@ const HomePage: React.FC = () => {
                   <Box
                     component="span"
                     sx={{
-                      color: '#60A5FA',
-                      textShadow: '0 4px 12px rgba(96, 165, 250, 0.5)',
+                      color: '#93C5FD',
+                      textShadow: '0 4px 12px rgba(147, 197, 253, 0.6)',
                     }}
                   >
                     {t('hero.subtitle')}
@@ -370,13 +376,11 @@ const HomePage: React.FC = () => {
                 
                 <Typography
                   sx={{
-                    color: mode === 'dark' ? '#E2E8F0' : '#1E293B',
+                    color: '#FFFFFF',
                     fontSize: '2rem',
                     fontWeight: 800,
                     mb: 2,
-                    textShadow: mode === 'dark' 
-                      ? '0 2px 8px rgba(0,0,0,0.5)' 
-                      : '0 2px 8px rgba(0,0,0,0.1)',
+                    textShadow: '0 2px 8px rgba(0,0,0,0.5)',
                   }}
                 >
                   {language === 'hi' ? 'सभी सेवाएं उपलब्ध' : 'All Services Available'}
@@ -384,12 +388,13 @@ const HomePage: React.FC = () => {
 
                 <Typography
                   sx={{
-                    color: mode === 'dark' ? '#CBD5E0' : '#475569',
+                    color: 'rgba(255,255,255,0.95)',
                     fontSize: '1.1rem',
                     fontWeight: 500,
                     mb: 3,
                     lineHeight: 1.6,
                     maxWidth: '400px',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                   }}
                 >
                   {language === 'hi' 
@@ -426,9 +431,10 @@ const HomePage: React.FC = () => {
                       </Typography>
                       <Typography
                         sx={{
-                          color: mode === 'dark' ? '#E2E8F0' : '#1E293B',
+                          color: '#FFFFFF',
                           fontWeight: 600,
                           fontSize: '0.9rem',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                         }}
                       >
                         {feature.text}
@@ -506,7 +512,7 @@ const HomePage: React.FC = () => {
                         variant="body2" 
                         sx={{ 
                           fontWeight: 600,
-                          color: mode === 'dark' ? '#A0AEC0' : 'text.secondary',
+                          color: mode === 'dark' ? '#A0AEC0' : '#475569',
                         }}
                       >
                         {t(stat.labelKey)}

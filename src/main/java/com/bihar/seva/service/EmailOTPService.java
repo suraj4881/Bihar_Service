@@ -33,14 +33,18 @@ public class EmailOTPService {
      */
     public String sendOTP(String email) {
         try {
+            // Normalize email to lowercase for consistent storage
+            String normalizedEmail = email.toLowerCase().trim();
+            
             // Generate OTP
             String otp = generateOTP();
             
-            // Store OTP with expiry time (5 minutes)
-            OTPData otpData = new OTPData(otp, LocalDateTime.now().plusMinutes(5));
-            otpStorage.put(email, otpData);
+            // Store OTP with expiry time (10 minutes for password reset)
+            OTPData otpData = new OTPData(otp, LocalDateTime.now().plusMinutes(10));
+            otpStorage.put(normalizedEmail, otpData);
             
-            log.info("✅ OTP generated for {}: {}", email, otp);
+            log.info("✅ OTP generated for {}: {}", normalizedEmail, otp);
+            log.info("📧 Stored OTP in map with key: {}", normalizedEmail);
             
             // Send real email
             try {
@@ -48,11 +52,13 @@ public class EmailOTPService {
                 log.info("📧 OTP email sent successfully to: {}", email);
             } catch (Exception e) {
                 log.error("❌ Failed to send email, but OTP generated: {}", otp);
+                log.error("❌ Email error details: {}", e.getMessage());
+                e.printStackTrace();
                 // Continue even if email fails (for testing)
             }
             
-            // Don't return OTP in production for security
-            return null; // Return null instead of OTP
+            // Return OTP for development/testing (remove in production)
+            return otp;
         } catch (Exception e) {
             log.error("Error sending OTP to {}: {}", email, e.getMessage());
             throw new RuntimeException("Failed to send OTP: " + e.getMessage());
@@ -64,42 +70,58 @@ public class EmailOTPService {
      */
     public boolean verifyOTP(String email, String otp) {
         try {
-            OTPData storedData = otpStorage.get(email);
+            // Normalize email to lowercase for consistent lookup
+            String normalizedEmail = email.toLowerCase().trim();
+            String trimmedOtp = otp != null ? otp.trim() : "";
+            
+            log.info("🔍 Verifying OTP for email: {} (normalized: {})", email, normalizedEmail);
+            log.info("🔍 OTP received: {} (length: {})", trimmedOtp, trimmedOtp.length());
+            log.info("🔍 OTP storage keys: {}", otpStorage.keySet());
+            
+            OTPData storedData = otpStorage.get(normalizedEmail);
             
             if (storedData == null) {
-                log.warn("No OTP found for email: {}", email);
+                log.warn("❌ No OTP found for email: {} (normalized: {})", email, normalizedEmail);
+                log.warn("❌ Available keys in storage: {}", otpStorage.keySet());
                 return false;
             }
+            
+            log.info("📧 Found stored OTP data for: {}", normalizedEmail);
+            log.info("📧 Stored OTP: {} (length: {})", storedData.getOtp(), storedData.getOtp().length());
+            log.info("📧 OTP expires at: {}", storedData.getExpiryTime());
             
             // Check if OTP expired
             if (LocalDateTime.now().isAfter(storedData.getExpiryTime())) {
-                log.warn("OTP expired for email: {}", email);
-                otpStorage.remove(email);
+                log.warn("❌ OTP expired for email: {} (expired at: {})", normalizedEmail, storedData.getExpiryTime());
+                otpStorage.remove(normalizedEmail);
                 return false;
             }
             
-            // Verify OTP
-            boolean isValid = storedData.getOtp().equals(otp);
+            // Verify OTP (trim both for comparison)
+            boolean isValid = storedData.getOtp().trim().equals(trimmedOtp);
             
             if (isValid) {
-                log.info("✅ OTP verified successfully for: {}", email);
-                otpStorage.remove(email); // Remove after successful verification
+                log.info("✅ OTP verified successfully for: {}", normalizedEmail);
+                // Don't remove OTP here - keep it for password reset step
             } else {
-                log.warn("❌ Invalid OTP for email: {}", email);
+                log.warn("❌ Invalid OTP for email: {}", normalizedEmail);
+                log.warn("❌ Expected: '{}' (length: {}), Got: '{}' (length: {})", 
+                    storedData.getOtp(), storedData.getOtp().length(), trimmedOtp, trimmedOtp.length());
             }
             
             return isValid;
         } catch (Exception e) {
-            log.error("Error verifying OTP for {}: {}", email, e.getMessage());
+            log.error("❌ Error verifying OTP for {}: {}", email, e.getMessage(), e);
             return false;
         }
     }
     
     /**
-     * Check if OTP exists and is valid
+     * Check if OTP exists and is valid (without removing it)
      */
     public boolean isOTPValid(String email) {
-        OTPData storedData = otpStorage.get(email);
+        String normalizedEmail = email.toLowerCase().trim();
+        OTPData storedData = otpStorage.get(normalizedEmail);
         if (storedData == null) {
             return false;
         }
@@ -107,11 +129,58 @@ public class EmailOTPService {
     }
     
     /**
+     * Check if OTP matches without removing it (for password reset after verification)
+     */
+    public boolean checkOTPMatch(String email, String otp) {
+        try {
+            String normalizedEmail = email.toLowerCase().trim();
+            String trimmedOtp = otp != null ? otp.trim() : "";
+            
+            OTPData storedData = otpStorage.get(normalizedEmail);
+            
+            if (storedData == null) {
+                log.warn("❌ No OTP found for email: {}", normalizedEmail);
+                return false;
+            }
+            
+            // Check if OTP expired
+            if (LocalDateTime.now().isAfter(storedData.getExpiryTime())) {
+                log.warn("❌ OTP expired for email: {}", normalizedEmail);
+                return false;
+            }
+            
+            // Check if OTP matches (but don't remove it yet)
+            boolean matches = storedData.getOtp().trim().equals(trimmedOtp);
+            
+            if (matches) {
+                log.info("✅ OTP matches for email: {}", normalizedEmail);
+            } else {
+                log.warn("❌ OTP mismatch for email: {}", normalizedEmail);
+            }
+            
+            return matches;
+        } catch (Exception e) {
+            log.error("❌ Error checking OTP match for {}: {}", email, e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Resend OTP
      */
     public String resendOTP(String email) {
-        otpStorage.remove(email); // Remove old OTP
+        String normalizedEmail = email.toLowerCase().trim();
+        otpStorage.remove(normalizedEmail); // Remove old OTP
         return sendOTP(email);
+    }
+    
+    /**
+     * Remove OTP (used after successful password reset)
+     */
+    public void removeOTP(String email) {
+        String normalizedEmail = email.toLowerCase().trim();
+        otpStorage.remove(normalizedEmail);
+        log.info("🗑️ OTP removed for email: {}", normalizedEmail);
     }
     
     /**

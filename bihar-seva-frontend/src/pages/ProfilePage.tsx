@@ -805,22 +805,16 @@ const ProfilePage: React.FC = () => {
       {/* Modern Header */}
       <AppBar variant="simple" position="sticky" showBackButton />
 
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Card
-          sx={{
-            mb: 4,
-            p: { xs: 3, md: 4 },
-            color: '#fff',
-            background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #2563EB 100%)',
-          }}
-        >
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: '#1F2937' }}>
             My Profile
           </Typography>
-          <Typography variant="body1" sx={{ opacity: 0.9 }}>
-            Keep your personal details up to date for smoother bookings.
+          <Typography variant="body1" sx={{ color: '#6B7280' }}>
+            Manage your personal information and account settings
           </Typography>
-        </Card>
+        </Box>
 
         {/* Error/Success Messages */}
         {error && (
@@ -834,63 +828,75 @@ const ProfilePage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Profile Header Card - Modern Glassmorphism */}
-        <Paper 
-          elevation={0}
+        {/* Profile Header Card */}
+        <Card 
+          elevation={3}
           sx={{ 
-            p: 4, 
             mb: 3, 
-            borderRadius: 4,
-            background: 'rgba(255, 255, 255, 0.25)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: '#fff',
+            overflow: 'hidden',
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+              zIndex: 0,
+            }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Box sx={{ position: 'relative' }}>
-                <Avatar
-                  src={profilePhoto ? (profilePhoto.startsWith('http') ? profilePhoto : `http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(profilePhoto)}`) : undefined}
-                  sx={{
-                    width: 120,
-                    height: 120,
-                    bgcolor: '#FF6B35',
-                    fontSize: '3rem',
-                    border: '4px solid white',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                  }}
-                >
-                  {!profilePhoto && user.name?.charAt(0).toUpperCase()}
-                </Avatar>
-              </Box>
-              
-              {/* Photo Menu Button */}
-              <IconButton
-                onClick={handlePhotoMenuClick}
-                disabled={photoUploading}
-                sx={{
-                  bgcolor: '#FF6B35',
-                  color: 'white',
-                  width: 48,
-                  height: 48,
-                  '&:hover': { 
-                    bgcolor: '#E64A19',
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 6px 16px rgba(255, 107, 53, 0.5)',
-                  },
-                  boxShadow: '0 4px 12px rgba(255, 107, 53, 0.4)',
-                  transition: 'all 0.2s ease',
-                  border: '2px solid white',
-                }}
-                title="Change Photo"
-              >
-                {photoUploading ? (
-                  <CircularProgress size={24} sx={{ color: 'white' }} />
-                ) : (
-                  <PhotoCamera sx={{ fontSize: 28 }} />
-                )}
-              </IconButton>
+          <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar
+                    src={profilePhoto ? (profilePhoto.startsWith('http') ? profilePhoto : `http://localhost:8080/api/files/serve?filePath=${encodeURIComponent(profilePhoto)}`) : undefined}
+                    sx={{
+                      width: 140,
+                      height: 140,
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      fontSize: '3.5rem',
+                      border: '5px solid rgba(255, 255, 255, 0.3)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                      backdropFilter: 'blur(10px)',
+                    }}
+                  >
+                    {!profilePhoto && user.name?.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <IconButton
+                    onClick={handlePhotoMenuClick}
+                    disabled={photoUploading}
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      bgcolor: '#fff',
+                      color: '#667eea',
+                      width: 44,
+                      height: 44,
+                      border: '3px solid #fff',
+                      '&:hover': { 
+                        bgcolor: '#f0f0f0',
+                        transform: 'scale(1.1)',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                      },
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                      transition: 'all 0.2s ease',
+                    }}
+                    title="Change Photo"
+                  >
+                    {photoUploading ? (
+                      <CircularProgress size={20} sx={{ color: '#667eea' }} />
+                    ) : (
+                      <PhotoCamera sx={{ fontSize: 22 }} />
+                    )}
+                  </IconButton>
+                </Box>
               
               {/* Photo Menu Dropdown */}
               <Menu
@@ -925,12 +931,12 @@ const ProfilePage: React.FC = () => {
                     py: 1.5,
                     px: 2,
                     '&:hover': {
-                      bgcolor: 'rgba(255, 107, 53, 0.1)',
+                      bgcolor: 'rgba(102, 126, 234, 0.1)',
                     },
                   }}
                 >
                   <ListItemIcon>
-                    <CameraAlt sx={{ color: '#FF6B35', fontSize: 24 }} />
+                    <CameraAlt sx={{ color: '#667eea', fontSize: 24 }} />
                   </ListItemIcon>
                   <ListItemText 
                     primary="Take Photo"
@@ -948,12 +954,12 @@ const ProfilePage: React.FC = () => {
                     py: 1.5,
                     px: 2,
                     '&:hover': {
-                      bgcolor: 'rgba(76, 175, 80, 0.1)',
+                      bgcolor: 'rgba(16, 185, 129, 0.1)',
                     },
                   }}
                 >
                   <ListItemIcon>
-                    <ImageIcon sx={{ color: '#4CAF50', fontSize: 24 }} />
+                    <ImageIcon sx={{ color: '#10B981', fontSize: 24 }} />
                   </ListItemIcon>
                   <ListItemText 
                     primary="Upload Photo"
@@ -974,138 +980,181 @@ const ProfilePage: React.FC = () => {
               />
               <canvas ref={canvasRef} style={{ display: 'none' }} />
             </Box>
-            <Box sx={{ flexGrow: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  {user.name}
+              <Box sx={{ flexGrow: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#fff' }}>
+                    {user.name}
+                  </Typography>
+                  {user.isVerified && (
+                    <Chip
+                      icon={<Verified sx={{ color: '#fff !important' }} />}
+                      label="Verified"
+                      sx={{
+                        bgcolor: 'rgba(255, 255, 255, 0.25)',
+                        color: '#fff',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                      }}
+                      size="small"
+                    />
+                  )}
+                </Box>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontWeight: 500,
+                    mb: 2,
+                  }}
+                >
+                  <Email sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
+                  {user.email}
                 </Typography>
-                {user.isVerified && (
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                   <Chip
-                    icon={<Verified />}
-                    label="Verified"
-                    color="success"
+                    icon={<Phone sx={{ fontSize: 16 }} />}
+                    label={user.phone || 'Not set'}
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      color: '#fff',
+                      fontWeight: 500,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                    }}
                     size="small"
                   />
-                )}
+                  <Chip
+                    label={`Member since ${new Date(user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`}
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      color: '#fff',
+                      fontWeight: 500,
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                    }}
+                    size="small"
+                  />
+                  {user.totalBookings > 0 && (
+                    <Chip
+                      label={`${user.totalBookings} Bookings`}
+                      sx={{
+                        bgcolor: 'rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                        fontWeight: 500,
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                      }}
+                      size="small"
+                    />
+                  )}
+                </Box>
               </Box>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  color: '#000',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                }}
-              >
-                Member since {new Date(user.createdAt).toLocaleDateString()}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                <Chip
-                  label={user.isOnline ? '🟢 Online' : '⚫ Offline'}
-                  color={user.isOnline ? 'success' : 'default'}
-                  size="small"
-                  sx={{
-                    fontWeight: 700,
-                    color: '#000',
-                    bgcolor: user.isOnline ? 'rgba(76, 175, 80, 0.2)' : 'rgba(158, 158, 158, 0.2)',
-                    border: '1px solid rgba(0,0,0,0.2)',
-                  }}
-                />
-                <Chip
-                  label={`${user.totalBookings || 0} Bookings`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    fontWeight: 700,
-                    borderColor: '#FF6B35',
-                    borderWidth: '2px',
-                    color: '#FF6B35',
-                    bgcolor: 'rgba(255, 107, 53, 0.1)',
-                  }}
-                />
-              </Box>
-            </Box>
-            <Box>
-              {!editMode ? (
-                <Button
-                  variant="contained"
-                  startIcon={<Edit />}
-                  onClick={() => setEditMode(true)}
-                  sx={{
-                    background: 'linear-gradient(45deg, #FF6B35, #F7931E)',
-                    borderRadius: 2,
-                    px: 3,
-                    fontWeight: 600,
-                    boxShadow: '0 4px 15px rgba(255, 107, 53, 0.4)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #F7931E, #FF6B35)',
-                      boxShadow: '0 6px 20px rgba(255, 107, 53, 0.6)',
-                    },
-                  }}
-                >
-                  {t('editProfile') || 'Edit Profile'}
-                </Button>
-              ) : (
-                <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box>
+                {!editMode ? (
                   <Button
                     variant="contained"
-                    startIcon={<Save />}
-                    onClick={handleSaveProfile}
-                    disabled={loading}
-                  sx={{
-                    background: 'linear-gradient(45deg, #2E7D32, #4CAF50)',
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    boxShadow: '0 4px 15px rgba(46, 125, 50, 0.4)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #4CAF50, #2E7D32)',
-                      boxShadow: '0 6px 20px rgba(46, 125, 50, 0.6)',
-                    },
-                  }}
-                >
-                  {t('save') || 'Save'}
-                </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Cancel />}
-                    onClick={handleCancel}
-                    disabled={loading}
+                    startIcon={<Edit />}
+                    onClick={() => setEditMode(true)}
+                    sx={{
+                      bgcolor: '#fff',
+                      color: '#667eea',
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                      '&:hover': {
+                        bgcolor: '#f5f5f5',
+                        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)',
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.2s ease',
+                    }}
                   >
-                    Cancel
+                    {t('editProfile') || 'Edit Profile'}
                   </Button>
-                </Box>
-              )}
+                ) : (
+                  <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Save />}
+                      onClick={handleSaveProfile}
+                      disabled={loading}
+                      sx={{
+                        bgcolor: '#10B981',
+                        color: '#fff',
+                        borderRadius: 2,
+                        px: 3,
+                        fontWeight: 600,
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                        '&:hover': {
+                          bgcolor: '#059669',
+                          boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
+                        },
+                      }}
+                    >
+                      {loading ? 'Saving...' : (t('save') || 'Save')}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Cancel />}
+                      onClick={handleCancel}
+                      disabled={loading}
+                      sx={{
+                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        color: '#fff',
+                        borderRadius: 2,
+                        px: 3,
+                        fontWeight: 600,
+                        '&:hover': {
+                          borderColor: '#fff',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                )}
+              </Box>
             </Box>
-          </Box>
-        </Paper>
+          </CardContent>
+        </Card>
 
-        {/* Profile Information Card - Glassmorphism */}
-        <Paper 
-          elevation={0}
+        {/* Profile Information Card */}
+        <Card 
+          elevation={2}
           sx={{ 
             mb: 3, 
-            borderRadius: 4,
-            background: 'rgba(255, 255, 255, 0.7)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 107, 53, 0.2)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            borderRadius: 3,
+            overflow: 'hidden',
           }}
         >
-          <Box sx={{ p: 3 }}>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                mb: 3, 
-                fontWeight: 900,
-                fontSize: '1.6rem',
-                color: '#333',
-                letterSpacing: '2px',
-                borderBottom: '3px solid #FF6B35',
-                pb: 1.5,
-                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-              }}
-            >
-              {t('personal Information')}
-            </Typography>
+          <Box sx={{ 
+            p: 3,
+            bgcolor: '#F9FAFB',
+            borderBottom: '1px solid #E5E7EB',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ 
+                p: 1.5, 
+                borderRadius: 2, 
+                bgcolor: '#667eea',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Person sx={{ color: '#fff', fontSize: 24 }} />
+              </Box>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: '#1F2937',
+                }}
+              >
+                {t('personal Information') || 'Personal Information'}
+              </Typography>
+            </Box>
+          </Box>
+          <CardContent sx={{ p: 3 }}>
             
             <Grid container spacing={3}>
               {/* Name */}
@@ -1117,23 +1166,26 @@ const ProfilePage: React.FC = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   disabled={!editMode}
-                  className="profile-textfield"
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: !editMode ? '#F9FAFB' : '#fff',
+                      '&:hover fieldset': {
+                        borderColor: '#667eea',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                      },
                     },
                     '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#FF6B35',
+                      color: '#667eea',
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Person color="action" />
+                        <Person sx={{ color: '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -1148,20 +1200,16 @@ const ProfilePage: React.FC = () => {
                   name="email"
                   value={formData.email}
                   disabled={true}
-                  className="profile-textfield"
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: '#F9FAFB',
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Email color="action" />
+                        <Email sx={{ color: '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -1177,21 +1225,17 @@ const ProfilePage: React.FC = () => {
                   name="phone"
                   value={formData.phone}
                   disabled={true}
-                  className="profile-textfield"
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: '#F9FAFB',
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Phone color="action" />
-                        <Typography sx={{ ml: 1, color: '#666' }}>+91</Typography>
+                        <Phone sx={{ color: '#667eea' }} />
+                        <Typography sx={{ ml: 1, color: '#6B7280', fontWeight: 500 }}>+91</Typography>
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -1199,7 +1243,15 @@ const ProfilePage: React.FC = () => {
                         <Button
                           size="small"
                           onClick={() => setPhoneChangeDialogOpen(true)}
-                          sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                          sx={{ 
+                            textTransform: 'none', 
+                            fontSize: '0.875rem',
+                            color: '#667eea',
+                            fontWeight: 600,
+                            '&:hover': {
+                              bgcolor: 'rgba(102, 126, 234, 0.1)',
+                            },
+                          }}
                         >
                           Change
                         </Button>
@@ -1219,23 +1271,26 @@ const ProfilePage: React.FC = () => {
                   value={formData.city}
                   onChange={handleInputChange}
                   disabled={!editMode}
-                  className="profile-textfield"
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: !editMode ? '#F9FAFB' : '#fff',
+                      '&:hover fieldset': {
+                        borderColor: '#667eea',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                      },
                     },
                     '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#FF6B35',
+                      color: '#667eea',
                     },
                   }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LocationOn color="action" />
+                        <LocationOn sx={{ color: '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -1252,24 +1307,27 @@ const ProfilePage: React.FC = () => {
                   onChange={handleInputChange}
                   disabled={!editMode}
                   multiline
-                  rows={2}
-                  className="profile-textfield"
+                  rows={3}
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: !editMode ? '#F9FAFB' : '#fff',
+                      '&:hover fieldset': {
+                        borderColor: '#667eea',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                      },
                     },
                     '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#FF6B35',
+                      color: '#667eea',
                     },
                   }}
                   InputProps={{
                     startAdornment: (
-                      <InputAdornment position="start">
-                        <Home color="action" />
+                      <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1 }}>
+                        <Home sx={{ color: '#667eea' }} />
                       </InputAdornment>
                     ),
                   }}
@@ -1285,17 +1343,20 @@ const ProfilePage: React.FC = () => {
                   value={formData.pincode}
                   onChange={handleInputChange}
                   disabled={!editMode}
-                  className="profile-textfield"
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: !editMode ? '#F9FAFB' : '#fff',
+                      '&:hover fieldset': {
+                        borderColor: '#667eea',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                      },
                     },
                     '& .MuiInputLabel-root.Mui-focused': {
-                      color: '#FF6B35',
+                      color: '#667eea',
                     },
                   }}
                   inputProps={{ maxLength: 6 }}
@@ -1309,250 +1370,92 @@ const ProfilePage: React.FC = () => {
                   label="State"
                   value="Bihar"
                   disabled={true}
-                  className="profile-textfield"
                   sx={{
-                    '& .MuiInputBase-input': {
-                      color: '#000',
-                      fontWeight: 500,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#333',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      bgcolor: '#F9FAFB',
                     },
                   }}
                   helperText="Service available in Bihar only"
                 />
               </Grid>
             </Grid>
-          </Box>
-        </Paper>
+          </CardContent>
+        </Card>
 
-        {/* Security Card - Glassmorphism */}
-        <Paper 
-          elevation={0}
+        {/* Security Card */}
+        <Card 
+          elevation={2}
           sx={{ 
             mb: 3,
-            mt: 4,
-            borderRadius: 4,
-            background: 'rgba(255, 255, 255, 0.7)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 107, 53, 0.2)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            borderRadius: 3,
+            overflow: 'hidden',
           }}
         >
-          <Box sx={{ p: 3 }}>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                mb: 3, 
-                fontWeight: 900,
-                fontSize: '1.6rem',
-                color: '#333',
-                letterSpacing: '2px',
-                borderBottom: '3px solid #FF6B35',
-                pb: 1.5,
-                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-              }}
-            >
-              {t('security') || 'Security'}
-            </Typography>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ 
+            p: 3,
+            bgcolor: '#F9FAFB',
+            borderBottom: '1px solid #E5E7EB',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ 
+                p: 1.5, 
+                borderRadius: 2, 
+                bgcolor: '#EF4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Security sx={{ color: '#fff', fontSize: 24 }} />
+              </Box>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: '#1F2937',
+                }}
+              >
+                {t('security') || 'Security'}
+              </Typography>
+            </Box>
+          </Box>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 2,
+            }}>
               <Box>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5, color: '#1F2937' }}>
                   Password
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Last changed on {new Date(user.updatedAt).toLocaleDateString()}
+                <Typography variant="body2" sx={{ color: '#6B7280' }}>
+                  Last changed on {new Date(user.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </Typography>
               </Box>
               <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<Lock />}
                 onClick={() => setPasswordDialogOpen(true)}
-                sx={{ textTransform: 'none' }}
+                sx={{ 
+                  textTransform: 'none',
+                  bgcolor: '#EF4444',
+                  borderRadius: 2,
+                  px: 3,
+                  fontWeight: 600,
+                  '&:hover': {
+                    bgcolor: '#DC2626',
+                  },
+                }}
               >
                 Change Password
               </Button>
             </Box>
-          </Box>
-        </Paper>
+          </CardContent>
+        </Card>
       </Container>
-
-      {/* Modern Footer */}
-      <Box
-        sx={{
-          mt: 8,
-          py: 4,
-          background: 'rgba(0, 0, 0, 0.3)',
-          backdropFilter: 'blur(10px)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-        }}
-      >
-        <Container maxWidth="lg">
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Logo size="medium" showText={true} />
-              </Box>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 2, lineHeight: 1.8 }}>
-                {t('Empowering Bihar with seamless service connections. Your trusted partner for quality home services.')}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  mb: 2, 
-                  fontWeight: 800, 
-                  color: '#333',
-                  fontSize: '1.1rem',
-                }}
-              >
-                Quick Links
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  mb: 1,
-                  color: '#555',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  '&:hover': { 
-                    color: '#FF6B35',
-                    fontWeight: 600,
-                  },
-                }}
-                onClick={() => navigate('/')}
-              >
-                Home
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  mb: 1,
-                  color: '#555',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  '&:hover': { 
-                    color: '#FF6B35',
-                    fontWeight: 600,
-                  },
-                }}
-                onClick={() => navigate('/about')}
-              >
-                About Us
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  mb: 1,
-                  color: '#555',
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  '&:hover': { 
-                    color: '#FF6B35',
-                    fontWeight: 600,
-                  },
-                }}
-                onClick={() => navigate('/contact')}
-              >
-                Contact
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  mb: 2, 
-                  fontWeight: 800, 
-                  color: '#333',
-                  fontSize: '1.1rem',
-                }}
-              >
-                Contact Us
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  mb: 1, 
-                  color: '#555',
-                  fontWeight: 500,
-                }}
-              >
-                <Email sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle', color: '#FF6B35' }} />
-                support@quicksevabihar.com
-              </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  mb: 1, 
-                  color: '#555',
-                  fontWeight: 500,
-                }}
-              >
-                <Phone sx={{ fontSize: 16, mr: 1, verticalAlign: 'middle', color: '#FF6B35' }} />
-                +91 1800-XXX-XXXX
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  mb: 2, 
-                  fontWeight: 800, 
-                  color: '#333',
-                  fontSize: '1.1rem',
-                }}
-              >
-                Follow
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <IconButton
-                  sx={{
-                    color: 'rgba(255,255,255,0.8)',
-                    '&:hover': { color: '#FF6B35', bgcolor: 'rgba(255,255,255,0.1)' },
-                  }}
-                >
-                  <Typography>FB</Typography>
-                </IconButton>
-                <IconButton
-                  sx={{
-                    color: 'rgba(255,255,255,0.8)',
-                    '&:hover': { color: '#FF6B35', bgcolor: 'rgba(255,255,255,0.1)' },
-                  }}
-                >
-                  <Typography>TW</Typography>
-                </IconButton>
-                <IconButton
-                  sx={{
-                    color: 'rgba(255,255,255,0.8)',
-                    '&:hover': { color: '#FF6B35', bgcolor: 'rgba(255,255,255,0.1)' },
-                  }}
-                >
-                  <Typography>IG</Typography>
-                </IconButton>
-              </Box>
-            </Grid>
-          </Grid>
-          <Box
-            sx={{
-              borderTop: '1px solid rgba(255,255,255,0.2)',
-              mt: 4,
-              pt: 3,
-              textAlign: 'center',
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'rgba(255,255,255,0.7)',
-              }}
-            >
-              © {new Date().getFullYear()} QuickSeva Bihar. {t('All rights reserved.')}
-            </Typography>
-          </Box>
-        </Container>
-      </Box>
 
       {/* Change Password Dialog */}
       <Dialog

@@ -132,6 +132,7 @@ const AdminDashboard: React.FC = () => {
   const [paymentVerifyTxnInput, setPaymentVerifyTxnInput] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
   const [paymentVerifyDecision, setPaymentVerifyDecision] = useState<'approve' | 'reject'>('approve');
+  const [recheckPaymentId, setRecheckPaymentId] = useState<string | null>(null);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [withdrawalsLoading, setWithdrawalsLoading] = useState(false);
   const [commissionStats, setCommissionStats] = useState<any>({});
@@ -394,6 +395,31 @@ const AdminDashboard: React.FC = () => {
     setPaymentVerifyNote('');
     setPaymentVerifyTxnInput('');
     setPaymentVerifyDialogOpen(true);
+  };
+
+  const handleRecheckRazorpay = async (bookingId: string) => {
+    if (!bookingId) return;
+    setRecheckPaymentId(bookingId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8080/api/payments/razorpay/recheck', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bookingId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchPayments();
+        fetchBookings();
+      }
+    } catch (error) {
+      // ignore recheck errors
+    } finally {
+      setRecheckPaymentId(null);
+    }
   };
 
   const fetchBookings = async () => {
@@ -1863,9 +1889,33 @@ const AdminDashboard: React.FC = () => {
                                   >
                                     Reject
                                   </Button>
+                                  {(payment.paymentMethod === 'RAZORPAY' || payment.paymentGateway === 'RAZORPAY') && (
+                                    <Button
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                      disabled={!payment.bookingId || recheckPaymentId === payment.bookingId}
+                                      onClick={() => handleRecheckRazorpay(payment.bookingId)}
+                                    >
+                                      {recheckPaymentId === payment.bookingId ? 'Rechecking...' : 'Recheck'}
+                                    </Button>
+                                  )}
                                 </Box>
                               ) : (
-                                <Typography variant="caption" color="text.secondary">—</Typography>
+                                (payment.paymentMethod === 'RAZORPAY' || payment.paymentGateway === 'RAZORPAY') &&
+                                payment.paymentStatus !== 'SUCCESS' ? (
+                                  <Button
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                    disabled={!payment.bookingId || recheckPaymentId === payment.bookingId}
+                                    onClick={() => handleRecheckRazorpay(payment.bookingId)}
+                                  >
+                                    {recheckPaymentId === payment.bookingId ? 'Rechecking...' : 'Recheck'}
+                                  </Button>
+                                ) : (
+                                  <Typography variant="caption" color="text.secondary">—</Typography>
+                                )
                               )}
                             </TableCell>
                           </TableRow>

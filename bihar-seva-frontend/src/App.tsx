@@ -19,6 +19,7 @@ import ProviderDetailPage from './pages/ProviderDetailPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomerDashboard from './pages/CustomerDashboard';
 import EmailOTPPage from './pages/EmailOTPPage';
+import ForgetPasswordPage from './pages/ForgetPasswordPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
@@ -48,6 +49,7 @@ function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/email-otp" element={<EmailOTPPage />} />
                   <Route path="/email-verification" element={<EmailVerificationPage />} />
+                  <Route path="/forgot-password" element={<ForgetPasswordPage />} />
                   
                   {/* Profile Setup Routes */}
                   <Route 

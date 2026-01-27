@@ -57,15 +57,20 @@ public class EmailService {
             log.info("✅ HTML email sent successfully to: {}", to);
         } catch (MessagingException e) {
             log.error("❌ Error sending HTML email to {}: {}", to, e.getMessage());
-            throw new RuntimeException("Failed to send HTML email: " + e.getMessage());
+            log.error("❌ Full error stack: ", e);
+            throw new RuntimeException("Failed to send HTML email: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("❌ Unexpected error sending HTML email to {}: {}", to, e.getMessage());
+            log.error("❌ Full error stack: ", e);
+            throw new RuntimeException("Failed to send HTML email: " + e.getMessage(), e);
         }
     }
     
     /**
-     * Send OTP email with nice formatting
+     * Send OTP email with nice formatting for password reset
      */
     public void sendOTPEmail(String to, String otp) {
-        String subject = "QuickSeva Bihar - Your OTP Code";
+        String subject = "QuickSeva Bihar - Password Reset OTP";
         
         StringBuilder html = new StringBuilder();
         html.append("<!DOCTYPE html>");
@@ -89,17 +94,17 @@ public class EmailService {
         html.append("<p>Email Verification</p>");
         html.append("</div>");
         html.append("<p>Hello!</p>");
-        html.append("<p>Thank you for using QuickSeva Bihar. Your One-Time Password (OTP) is:</p>");
+        html.append("<p>You have requested to reset your password for QuickSeva Bihar. Your One-Time Password (OTP) is:</p>");
         html.append("<div class='otp-box'>").append(otp).append("</div>");
         html.append("<div class='info'>");
         html.append("⚠️ <strong>Important:</strong>");
         html.append("<ul>");
         html.append("<li>This OTP is valid for <strong>5 minutes</strong></li>");
         html.append("<li>Do not share this OTP with anyone</li>");
-        html.append("<li>If you didn't request this, please ignore this email</li>");
+        html.append("<li>If you didn't request a password reset, please ignore this email</li>");
         html.append("</ul>");
         html.append("</div>");
-        html.append("<p>Enter this OTP on the verification page to complete your registration/login.</p>");
+        html.append("<p>Enter this OTP on the password reset page to set your new password.</p>");
         html.append("<div class='footer'>");
         html.append("<p>© 2024 QuickSeva Bihar. All rights reserved.</p>");
         html.append("<p>This is an automated email. Please do not reply.</p>");

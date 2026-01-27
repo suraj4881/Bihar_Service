@@ -6,6 +6,8 @@ import com.bihar.seva.model.Booking;
 import com.bihar.seva.repositories.PaymentRepository;
 import com.bihar.seva.repositories.DynamicServiceRepository;
 import com.bihar.seva.repositories.BookingRepository;
+import com.bihar.seva.repositories.UserRepository;
+import com.bihar.seva.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -39,6 +43,10 @@ public class PaymentService {
     private final DynamicServiceRepository serviceRepository;
     private final BookingRepository bookingRepository;
     private final WalletService walletService;
+    private final EmailService emailService;
+    private final SMSService smsService;
+    private final WhatsAppService whatsAppService;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
 
     @Value("${razorpay.webhook.secret:}")
@@ -49,6 +57,15 @@ public class PaymentService {
 
     @Value("${razorpay.key.secret:}")
     private String razorpayKeySecret;
+
+    @Value("${notifications.payment.email.enabled:true}")
+    private boolean paymentEmailEnabled;
+
+    @Value("${notifications.payment.sms.enabled:true}")
+    private boolean paymentSmsEnabled;
+
+    @Value("${notifications.payment.whatsapp.enabled:true}")
+    private boolean paymentWhatsappEnabled;
     
     private static final Double COMMISSION_RATE = 10.0; // 10% commission
     
@@ -59,6 +76,10 @@ public class PaymentService {
     public Payment processPayment(String bookingId, String paymentMethod, String transactionId) {
         Booking booking = bookingRepository.findById(bookingId)
             .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
+        if ("PAID".equalsIgnoreCase(booking.getPaymentStatus())) {
+            throw new RuntimeException("Payment already completed");
+        }
         
         // Get service by serviceId (preferred) or fallback to service name
         DynamicService service;
@@ -135,10 +156,52 @@ public class PaymentService {
                     "Payment received for booking " + bookingId,
                     "BOOKING"
                 );
+                notificationService.createNotification(
+                    booking.getUserId(),
+                    "Payment Successful",
+                    "Your payment is successful for booking " + bookingId,
+                    "PAYMENT"
+                );
+                sendPaymentChannelNotifications(booking, payment);
             } catch (Exception e) {
                 log.error("Payment processing failed: {}", e.getMessage());
                 payment.setPaymentStatus("FAILED");
             }
+        } else if ("RAZORPAY".equalsIgnoreCase(paymentMethod)) {
+            Double payoutAmount = basePrice;
+            if (payoutAmount != null) {
+                walletService.addBalance(
+                    service.getProviderId(),
+                    payoutAmount,
+                    "Payment for service: " + service.getServiceName(),
+                    "PAYOUT"
+                );
+            }
+            payment.setPaymentStatus("SUCCESS");
+            payment.setCommissionDeducted(true);
+            payment.setCommissionDeductedAt(LocalDateTime.now());
+            payment.setProviderPayoutDone(true);
+            payment.setProviderPayoutAt(LocalDateTime.now());
+            payment.setProviderPayoutAmount(payoutAmount);
+            booking.setPaymentStatus("PAID");
+            booking.setStatus("CONFIRMED");
+            booking.setPaymentMethod(paymentMethod);
+            booking.setTransactionId(transactionId);
+            booking.setUpdatedAt(LocalDateTime.now());
+            bookingRepository.save(booking);
+            notificationService.createNotification(
+                booking.getProviderId(),
+                "New Booking Confirmed",
+                "Payment received for booking " + bookingId,
+                "BOOKING"
+            );
+            notificationService.createNotification(
+                booking.getUserId(),
+                "Payment Successful",
+                "Your payment is successful for booking " + bookingId,
+                "PAYMENT"
+            );
+            sendPaymentChannelNotifications(booking, payment);
         } else {
             if (transactionId == null || transactionId.isBlank()) {
                 throw new RuntimeException("Transaction ID required for online payments");
@@ -334,6 +397,7 @@ public class PaymentService {
             "Your payment is verified for booking " + booking.getId(),
             "PAYMENT"
         );
+        sendPaymentChannelNotifications(booking, payment);
 
         return paymentRepository.save(payment);
     }
@@ -393,9 +457,16 @@ public class PaymentService {
         if (body == null || body.get("id") == null) {
             throw new RuntimeException("Failed to create Razorpay order");
         }
+        String orderId = body.get("id").toString();
+
+        booking.setPaymentMethod("RAZORPAY");
+        booking.setTransactionId(orderId);
+        booking.setPaymentStatus("PENDING");
+        booking.setUpdatedAt(LocalDateTime.now());
+        bookingRepository.save(booking);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("orderId", body.get("id"));
+        result.put("orderId", orderId);
         result.put("amount", body.get("amount"));
         result.put("currency", body.get("currency"));
         result.put("keyId", razorpayKeyId);
@@ -448,6 +519,80 @@ public class PaymentService {
         }
     }
 
+    /**
+     * Handle Razorpay webhook payload
+     */
+    public void handleRazorpayWebhook(String payload) {
+        try {
+            JSONObject root = new JSONObject(payload);
+            String event = root.optString("event");
+            if (!"payment.captured".equalsIgnoreCase(event)) {
+                return;
+            }
+            JSONObject payment = root.getJSONObject("payload").getJSONObject("payment").getJSONObject("entity");
+            String orderId = payment.optString("order_id");
+            String paymentId = payment.optString("id");
+            if (orderId == null || orderId.isBlank()) {
+                return;
+            }
+            Booking booking = bookingRepository.findByTransactionId(orderId);
+            if (booking == null) {
+                return;
+            }
+            if ("PAID".equalsIgnoreCase(booking.getPaymentStatus())) {
+                return;
+            }
+            processPayment(booking.getId(), "RAZORPAY", paymentId);
+        } catch (Exception e) {
+            log.error("Failed to handle Razorpay webhook", e);
+        }
+    }
+
+    /**
+     * Recheck Razorpay payment status by bookingId and confirm if captured.
+     */
+    public Payment reconcileRazorpayPayment(String bookingId) {
+        if (razorpayKeyId == null || razorpayKeyId.isBlank()
+            || razorpayKeySecret == null || razorpayKeySecret.isBlank()) {
+            throw new RuntimeException("Razorpay key id/secret not configured");
+        }
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
+        if ("PAID".equalsIgnoreCase(booking.getPaymentStatus())) {
+            throw new RuntimeException("Payment already completed");
+        }
+        String orderId = booking.getTransactionId();
+        if (orderId == null || orderId.isBlank()) {
+            throw new RuntimeException("Razorpay order id not found for booking");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(razorpayKeyId, razorpayKeySecret);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.exchange(
+            "https://api.razorpay.com/v1/orders/" + orderId + "/payments",
+            HttpMethod.GET,
+            entity,
+            String.class
+        );
+        JSONObject body = new JSONObject(response.getBody() == null ? "{}" : response.getBody());
+        JSONArray items = body.optJSONArray("items");
+        if (items == null || items.isEmpty()) {
+            throw new RuntimeException("No payments found for this order yet");
+        }
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+            String status = item.optString("status");
+            if ("captured".equalsIgnoreCase(status)) {
+                String paymentId = item.optString("id");
+                return processPayment(booking.getId(), "RAZORPAY", paymentId);
+            }
+        }
+        throw new RuntimeException("Payment not captured yet");
+    }
+
     private String hmacSha256Hex(String payload, String secret) throws Exception {
         Mac sha256Hmac = Mac.getInstance("HmacSHA256");
         SecretKeySpec secretKey = new SecretKeySpec(
@@ -465,5 +610,55 @@ public class PaymentService {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    private void sendPaymentChannelNotifications(Booking booking, Payment payment) {
+        String amountText = payment.getTotalAmount() != null
+            ? "₹" + payment.getTotalAmount()
+            : "your payment";
+        String customerMessage = "Payment successful for booking " + booking.getId() + " (" + amountText + ").";
+        String providerMessage = "New booking confirmed: " + booking.getId() + " (" + amountText + ").";
+
+        User customer = userRepository.findById(booking.getUserId()).orElse(null);
+        User provider = userRepository.findById(booking.getProviderId()).orElse(null);
+
+        if (paymentEmailEnabled) {
+            if (customer != null && customer.getEmail() != null && !customer.getEmail().isBlank()) {
+                emailService.sendSimpleEmail(customer.getEmail(), "Payment Successful", customerMessage);
+            }
+            if (provider != null && provider.getEmail() != null && !provider.getEmail().isBlank()) {
+                emailService.sendSimpleEmail(provider.getEmail(), "New Booking Confirmed", providerMessage);
+            }
+        }
+        if (paymentSmsEnabled) {
+            if (customer != null && customer.getPhone() != null && !customer.getPhone().isBlank()) {
+                smsService.sendSMS(customer.getPhone(), customerMessage);
+            }
+            if (provider != null && provider.getPhone() != null && !provider.getPhone().isBlank()) {
+                smsService.sendSMS(provider.getPhone(), providerMessage);
+            }
+        }
+        if (paymentWhatsappEnabled) {
+            if (customer != null && customer.getPhone() != null && !customer.getPhone().isBlank()) {
+                // Send template-based WhatsApp message for payment success
+                String customerLanguage = customer.getLanguage() != null ? customer.getLanguage() : "English";
+                whatsAppService.sendPaymentSuccessTemplate(
+                    customer.getPhone(), 
+                    customerLanguage, 
+                    booking.getId(), 
+                    payment.getTotalAmount()
+                );
+            }
+            if (provider != null && provider.getPhone() != null && !provider.getPhone().isBlank()) {
+                // Provider also gets template message to avoid 24-hour window restriction
+                String providerLanguage = provider.getLanguage() != null ? provider.getLanguage() : "English";
+                whatsAppService.sendPaymentSuccessTemplate(
+                    provider.getPhone(), 
+                    providerLanguage, 
+                    booking.getId(), 
+                    payment.getTotalAmount()
+                );
+            }
+        }
     }
 }

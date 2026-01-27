@@ -9,6 +9,9 @@ target/
 logs/
 *.log
 
+# local secrets
+src/main/resources/application-local.properties
+
 # uploads
 uploads/
 
