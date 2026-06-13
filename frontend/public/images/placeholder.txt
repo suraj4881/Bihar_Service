@@ -1,0 +1,13 @@
+To use your own Bihar worker image:
+
+1. Add your image here: public/images/bihar-worker.jpg
+2. Update HomePage.tsx line ~405:
+   backgroundImage: `url('/images/bihar-worker.jpg')`
+
+Recommended:
+- Indian service worker photo
+- Size: 800x500 pixels
+- Format: JPG or PNG
+- Professional looking
+- Tools visible (optional)
+

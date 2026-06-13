@@ -1,0 +1,140 @@
+import React from 'react';
+import { Box, Typography, useTheme } from '@mui/material';
+import { Handyman, Build } from '@mui/icons-material';
+
+interface LogoProps {
+  size?: 'small' | 'medium' | 'large' | number;
+  showText?: boolean;
+  onClick?: () => void;
+  /** Light text for dark/teal backgrounds (auth side panels) */
+  tone?: 'default' | 'inverse';
+}
+
+const Logo: React.FC<LogoProps> = ({ size = 'medium', showText = true, onClick, tone = 'default' }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const inverse = tone === 'inverse';
+  
+  // ✅ Handle both string and number sizes
+  const getSizes = () => {
+    if (typeof size === 'number') {
+      return {
+        container: size,
+        icon: Math.round(size * 0.6),
+        text: `${size / 30}rem`,
+        tagline: `${size / 80}rem`,
+      };
+    }
+    
+    const predefinedSizes: Record<string, { container: number; icon: number; text: string; tagline: string }> = {
+      small: { container: 32, icon: 20, text: '1.1rem', tagline: '0.55rem' },
+      medium: { container: 44, icon: 26, text: '1.5rem', tagline: '0.65rem' },
+      large: { container: 56, icon: 32, text: '2rem', tagline: '0.75rem' },
+    };
+    
+    // ✅ Fallback to medium if invalid size
+    return predefinedSizes[size as string] || predefinedSizes.medium;
+  };
+  
+  const sizes = getSizes();
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+      onClick={onClick}
+    >
+      {/* Logo Icon - Service Badge */}
+      <Box
+        sx={{
+          position: 'relative',
+          width: sizes.container,
+          height: sizes.container,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #00897B 0%, #00695C 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(0, 105, 92, 0.35)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: 3,
+            borderRadius: '50%',
+            background: 'white',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <Handyman
+            sx={{
+              fontSize: sizes.icon,
+              color: '#00695C',
+              transform: 'rotate(-15deg)',
+            }}
+          />
+          <Build
+            sx={{
+              fontSize: sizes.icon * 0.7,
+              color: '#004D40',
+              position: 'absolute',
+              bottom: '25%',
+              right: '25%',
+            }}
+          />
+        </Box>
+      </Box>
+
+      {/* Logo Text */}
+      {showText && (
+        <Box>
+          <Typography
+            sx={{
+              fontSize: sizes.text,
+              fontWeight: 800,
+              fontFamily: '"Poppins", sans-serif',
+              lineHeight: 1,
+              letterSpacing: '-0.5px',
+            }}
+          >
+            <Box component="span" sx={{ color: inverse ? '#FFFFFF' : isDark ? '#E2E8F0' : '#212121' }}>
+              Sewa
+            </Box>
+            <Box component="span" sx={{ color: inverse ? '#B2DFDB' : '#00695C' }}>
+              Bihar
+            </Box>
+          </Typography>
+          {size !== 'small' && (
+            <Typography
+              sx={{
+                fontSize: sizes.tagline,
+                color: inverse ? 'rgba(255,255,255,0.88)' : isDark ? '#A0AEC0' : '#757575',
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+                mt: 0.3,
+              }}
+            >
+              सेवा का भरोसा
+            </Typography>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+export default Logo;

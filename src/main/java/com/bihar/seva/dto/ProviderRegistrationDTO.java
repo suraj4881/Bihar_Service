@@ -1,0 +1,45 @@
+package com.bihar.seva.dto;
+
+import lombok.Data;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+import java.util.List;
+
+@Data
+public class ProviderRegistrationDTO {
+    @NotBlank(message = "Name is required")
+    @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
+    private String name;
+    
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
+    private String email;
+    
+    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Invalid phone number")
+    @NotBlank(message = "Phone number is required")
+    private String phone;
+    
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, message = "Password must be at least 6 characters")
+    private String password;
+    
+    @NotBlank(message = "Skill is required")
+    private String skill;
+    
+    private String address;
+    private String city;
+    private String pincode;
+    private String description;
+    private String experience;
+    private String workingHours;
+    private double price;
+    private List<String> serviceAreas;
+    private String bankAccount;
+    private String ifscCode;
+    private String upiId;
+    private List<String> languages;
+    private String emergencyContact;
+    private String emergencyPhone;
+}
