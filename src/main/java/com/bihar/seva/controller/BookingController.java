@@ -278,7 +278,7 @@ public class BookingController {
         }
     }
     
-    // Mark booking as completed (legacy — use completion OTP + photos flow)
+    // Mark booking as completed (legacy - use completion OTP + photos flow)
     @PutMapping("/{id}/complete")
     public ResponseEntity<ApiResponse> completeBooking(@PathVariable String id) {
         return ResponseEntity.badRequest()
@@ -323,7 +323,7 @@ public class BookingController {
             notificationService.createNotification(
                 booking.getUserId(),
                 "Completion code updated",
-                "Your provider sent a new 4-digit code — check your dashboard and share it when asked.",
+                "Your provider sent a new 4-digit code - check your dashboard and share it when asked.",
                 "BOOKING"
             );
             return ResponseEntity.ok(new ApiResponse(true, "New completion code is visible on the customer dashboard", null));

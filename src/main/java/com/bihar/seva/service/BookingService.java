@@ -205,9 +205,9 @@ public class BookingService {
      * Provider action: generate a fresh 4-digit code and persist it so the customer
      * sees it on their dashboard.
      *
-     * @param customerUserId optional — if sent, must match booking (catches wrong
+     * @param customerUserId optional - if sent, must match booking (catches wrong
      *                       booking in UI)
-     * @param serviceId      optional — if sent, must match booking when present
+     * @param serviceId      optional - if sent, must match booking when present
      */
     public Booking sendCompletionOtpToCustomer(String bookingId, String providerId, String customerUserId,
             String serviceId) {

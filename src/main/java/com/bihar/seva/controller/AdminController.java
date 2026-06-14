@@ -28,7 +28,7 @@ public class AdminController {
     private final com.bihar.seva.repositories.SelfieDocumentRepository selfieDocumentRepository;
     
     /**
-     * Dashboard metrics — {@code GET /api/admin/dashboard/stats}.
+     * Dashboard metrics - {@code GET /api/admin/dashboard/stats}.
      * <p><b>Do not add</b> another method with {@code @GetMapping("/dashboard/stats")} (e.g. {@code getDashboardStatsAlt});
      * Spring will fail with ambiguous mapping. Use {@link #getAdminStatsShort()} for {@code /api/admin/stats} only.
      */
