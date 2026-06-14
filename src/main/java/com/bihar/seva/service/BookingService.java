@@ -148,7 +148,7 @@ public class BookingService {
             walletService.addBalance(
                     booking.getProviderId(),
                     amount,
-                    "Completed service — booking " + booking.getId(),
+                    "Completed service - booking " + booking.getId(),
                     "CREDIT");
         } catch (Exception e) {
             log.warn("Could not credit provider wallet for booking {}: {}", booking.getId(), e.getMessage());
@@ -254,7 +254,7 @@ public class BookingService {
         String storedPin = booking.getServiceCompletionPin();
         if (storedPin == null || storedPin.isEmpty()) {
             throw new RuntimeException(
-                    "This booking has no completion code. It may be an old booking — contact support.");
+                    "This booking has no completion code. It may be an old booking - contact support.");
         }
         if (!storedPin.equals(normalized)) {
             throw new RuntimeException(
