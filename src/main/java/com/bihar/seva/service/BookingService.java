@@ -279,27 +279,29 @@ public class BookingService {
         return updateBookingStatus(bookingId, "COMPLETED");
     }
 
-    ic Booking cancelBooking(String id, StBooking booking = bookingRepository.find    .orElseThrow(() -> new RuntimeException("Booking not f
+    public Booking cancelBooking(String id, String reason, String cancelledBy) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-    boking.setStatus("CANCELLED");
+        booking.setStatus("CANCELLED");
+        booking.setCancellationReason(reason);
+        booking.setCancelledBy(cancelledBy);
+        booking.setCancelledAt(LocalDateTime.now());
+        booking.setUpdatedAt(LocalDateTime.now());
 
-    
-        ing.setCancellationReason(reason)
-    bbooking.setCancelledAt(LocalDateTime.now()booking.setUpdatedAt(LocalDateTime.now());
-        
         log.info("Booking {} cancelled by: {}", id, cancelledBy);
         return bookingRepository.save(booking);
     }
-                
+
     public Booking addRating(String id, int customerRating, String customerFeedback) {
         Booking booking = bookingRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Booking not found"));
-        
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
         if (!"COMPLETED".equals(booking.getStatus())) {
             throw new RuntimeException("Can only rate completed bookings");
         }
-     
 
+        booking.setCustomerRating(customerRating);
         booking.setCustomerFeedback(customerFeedback);
         booking.setUpdatedAt(LocalDateTime.now());
 
@@ -328,15 +330,3 @@ public class BookingService {
         });
     }
 }
-
-
-        
-
-    
-                
-
-        
-
-        
-
-        
